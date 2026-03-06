@@ -34,9 +34,13 @@ const currentPath = Astro.url.pathname;
 <style>
 	.site-header {
 		position: sticky;
-		top: 1rem;
+		top: 0;
 		z-index: 30;
-		padding-inline: 0.5rem;
+		padding-inline: 0;
+		pointer-events: none;
+		transition:
+			top 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			padding-inline 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
 	}
 
 	.site-nav {
@@ -44,7 +48,23 @@ const currentPath = Astro.url.pathname;
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--space-md);
-		padding: 0.72rem 0.92rem;
+		width: min(100%, calc(var(--max-width) + 4rem));
+		padding: 0.9rem 1.4rem 1rem;
+		border-top: none;
+		border-radius: 0 0 30px 30px;
+		background: rgba(255, 255, 255, 0.16);
+		box-shadow: 0 12px 28px -24px rgba(8, 18, 34, 0.16);
+		pointer-events: auto;
+		transform-origin: top center;
+		transition:
+			width 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			padding 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			border-radius 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			background-color 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			border-color 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			box-shadow 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			backdrop-filter 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+			-webkit-backdrop-filter 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
 	}
 
 	.site-brand {
@@ -122,14 +142,33 @@ const currentPath = Astro.url.pathname;
 		transform: translateY(-1px);
 	}
 
+	:global(html[data-nav-condensed]) .site-header {
+		top: 0.85rem;
+		padding-inline: 0.5rem;
+	}
+
+	:global(html[data-nav-condensed]) .site-nav {
+		width: min(calc(100% - 1rem), var(--max-width));
+		padding: 0.72rem 0.92rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.18);
+		border-radius: var(--radius-panel);
+		background: rgba(255, 255, 255, 0.12);
+		box-shadow: 0 18px 36px -30px rgba(8, 18, 34, 0.22);
+		backdrop-filter: blur(16px) saturate(130%);
+		-webkit-backdrop-filter: blur(16px) saturate(130%);
+	}
+
 	@media (max-width: 960px) {
 		.site-header {
-			top: 0.5rem;
+			top: 0;
+			padding-inline: 0;
 		}
 
 		.site-nav {
 			flex-wrap: wrap;
 			justify-content: center;
+			width: 100%;
+			padding: 0.82rem 0.9rem 0.95rem;
 			border-radius: 32px;
 		}
 
@@ -156,11 +195,23 @@ const currentPath = Astro.url.pathname;
 		.nav-actions {
 			order: 3;
 		}
+
+		:global(html[data-nav-condensed]) .site-header {
+			top: 0.5rem;
+			padding-inline: 0.5rem;
+		}
+
+		:global(html[data-nav-condensed]) .site-nav {
+			width: min(calc(100% - 1rem), var(--max-width));
+			padding: 0.78rem 0.88rem;
+			border-radius: 28px;
+		}
 	}
 
 	@media (max-width: 640px) {
 		.site-nav {
 			padding: 0.8rem;
+			border-radius: 0 0 24px 24px;
 		}
 
 		.nav-links,
@@ -173,6 +224,10 @@ const currentPath = Astro.url.pathname;
 
 		.nav-link {
 			padding-inline: 0.88rem;
+		}
+
+		:global(html[data-nav-condensed]) .site-nav {
+			border-radius: 24px;
 		}
 	}
 </style>
