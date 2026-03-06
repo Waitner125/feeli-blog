@@ -218,6 +218,12 @@ pre code {
 	isolation: isolate;
 }
 
+.site-route-frame {
+	flex: 1;
+	display: grid;
+	align-content: start;
+}
+
 .site-background {
 	position: fixed;
 	inset: 0;
@@ -268,10 +274,20 @@ pre code {
 }
 
 .site-main {
-	flex: 1;
 	display: grid;
 	gap: var(--space-3xl);
 	padding-block: clamp(1.5rem, 3vw, 3rem) clamp(3rem, 5vw, 5rem);
+}
+
+::view-transition-group(page-shell) {
+	animation-duration: 460ms;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(page-shell),
+::view-transition-new(page-shell) {
+	animation-duration: 460ms;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .container {

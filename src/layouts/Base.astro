@@ -1,4 +1,5 @@
 ---
+import { slide } from "astro:transitions";
 import BaseHead from "@/components/BaseHead.astro";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
@@ -37,7 +38,7 @@ const backgroundImageStyle = backgroundImageUrl
 ---
 
 <!doctype html>
-<html lang={siteConfig.language}>
+<html lang={siteConfig.language} transition:animate="none">
 	<head>
 		<BaseHead
 			title={title}
@@ -61,9 +62,15 @@ const backgroundImageStyle = backgroundImageUrl
 			)}
 		</div>
 		<Header />
-		<main class="container site-main">
-			<slot />
-		</main>
-		<Footer />
+		<div
+			class="site-route-frame"
+			transition:name="page-shell"
+			transition:animate={slide({ duration: "460ms" })}
+		>
+			<main class="container site-main">
+				<slot />
+			</main>
+			<Footer />
+		</div>
 	</body>
 </html>
