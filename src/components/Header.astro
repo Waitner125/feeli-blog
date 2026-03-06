@@ -33,14 +33,17 @@ const currentPath = Astro.url.pathname;
 
 <style>
 	.site-header {
+		--nav-motion-main: 520ms cubic-bezier(0.22, 1, 0.36, 1);
+		--nav-motion-surface: 420ms cubic-bezier(0.33, 1, 0.68, 1);
+		--nav-motion-transform: 560ms cubic-bezier(0.16, 1, 0.3, 1);
 		position: sticky;
 		top: 0;
 		z-index: 30;
 		padding-inline: 0;
 		pointer-events: none;
 		transition:
-			top 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			padding-inline 280ms cubic-bezier(0.2, 0.85, 0.2, 1);
+			top var(--nav-motion-main),
+			padding-inline var(--nav-motion-main);
 	}
 
 	.site-nav {
@@ -76,17 +79,17 @@ const currentPath = Astro.url.pathname;
 			transform,
 			box-shadow;
 		transition:
-			width 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			max-width 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			margin 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			padding 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			border-radius 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			background-color 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			border-color 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			box-shadow 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			backdrop-filter 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			-webkit-backdrop-filter 280ms cubic-bezier(0.2, 0.85, 0.2, 1),
-			transform 280ms cubic-bezier(0.2, 0.85, 0.2, 1);
+			width var(--nav-motion-main),
+			max-width var(--nav-motion-main),
+			margin var(--nav-motion-main),
+			padding var(--nav-motion-main),
+			border-radius var(--nav-motion-main),
+			background-color var(--nav-motion-surface),
+			border-color var(--nav-motion-surface),
+			box-shadow var(--nav-motion-surface),
+			backdrop-filter var(--nav-motion-surface),
+			-webkit-backdrop-filter var(--nav-motion-surface),
+			transform var(--nav-motion-transform);
 	}
 
 	.site-brand {
@@ -128,6 +131,10 @@ const currentPath = Astro.url.pathname;
 		color: var(--color-text-muted);
 		font-size: 0.78rem;
 		white-space: nowrap;
+		transform-origin: left center;
+		transition:
+			opacity var(--nav-motion-surface),
+			transform var(--nav-motion-main);
 	}
 
 	.nav-links,
@@ -180,7 +187,12 @@ const currentPath = Astro.url.pathname;
 		box-shadow: 0 18px 38px -28px rgba(8, 18, 34, 0.24);
 		backdrop-filter: blur(16px) saturate(130%);
 		-webkit-backdrop-filter: blur(16px) saturate(130%);
-		transform: translate3d(0, 0, 0) scale(0.988);
+		transform: translate3d(0, 0, 0) scale(0.992);
+	}
+
+	:global(html[data-nav-condensed]) .site-brand-copy small {
+		opacity: 0.68;
+		transform: translateY(-1px);
 	}
 
 	@media (max-width: 960px) {
