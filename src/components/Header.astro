@@ -125,12 +125,18 @@ function isLinkActive(href: string) {
 		position: relative;
 		z-index: 1;
 		width: 100%;
+		max-width: 100vw;
+		margin-inline: auto;
 		overflow-x: auto;
 		overflow-y: hidden;
 		-webkit-overflow-scrolling: touch;
 		scrollbar-width: thin;
 		scrollbar-color: rgba(10, 132, 255, 0.3) transparent;
 		pointer-events: auto;
+		will-change: max-width, transform;
+		transition:
+			max-width var(--nav-motion-transform),
+			transform var(--nav-motion-transform);
 	}
 
 	.site-nav-shell-scroll::-webkit-scrollbar {
@@ -160,6 +166,12 @@ function isLinkActive(href: string) {
 			0.96rem
 			calc(1.18rem + env(safe-area-inset-left));
 		will-change: max-width;
+		transform-origin: top center;
+		transform: translate3d(0, 0, 0) scale(1);
+		transition:
+			gap var(--nav-motion-main),
+			padding var(--nav-motion-main),
+			transform var(--nav-motion-transform);
 	}
 
 	.site-brand {
@@ -238,6 +250,8 @@ function isLinkActive(href: string) {
 		align-items: center;
 		gap: var(--space-md);
 		list-style: none;
+		transition: transform var(--nav-motion-surface);
+		transform: translate3d(0, 0, 0);
 	}
 
 	.nav-links {
@@ -300,9 +314,18 @@ function isLinkActive(href: string) {
 		margin-inline: auto;
 	}
 
+	:global(html[data-nav-condensed]) .site-nav-shell {
+		transform: translate3d(0, 0, 0) scale(var(--nav-shell-condensed-scale));
+	}
+
 	:global(html[data-nav-condensed]) .site-brand-copy small {
 		opacity: 0.68;
 		transform: translateY(-1px);
+	}
+
+	:global(html[data-nav-condensed]) .nav-links,
+	:global(html[data-nav-condensed]) .nav-actions {
+		transform: translate3d(0, -1px, 0);
 	}
 
 	@media (max-width: 960px) {
@@ -322,6 +345,7 @@ function isLinkActive(href: string) {
 				calc(0.9rem + env(safe-area-inset-right))
 				0.95rem
 				calc(0.9rem + env(safe-area-inset-left));
+			transform: none;
 		}
 
 		.site-brand-copy {
@@ -355,6 +379,10 @@ function isLinkActive(href: string) {
 		:global(html[data-nav-condensed]) .site-nav::before {
 			inset-inline: var(--nav-shell-condensed-inset-mobile);
 			border-radius: 28px;
+			transform: none;
+		}
+
+		:global(html[data-nav-condensed]) .site-nav-shell {
 			transform: none;
 		}
 	}
