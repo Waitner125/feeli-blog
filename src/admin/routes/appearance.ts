@@ -156,6 +156,11 @@ function renderAppearancePage(options: {
 				gap: 1.5rem;
 			}
 
+			.appearance-form-grid {
+				align-items: start;
+				margin-bottom: 1.5rem;
+			}
+
 			.appearance-panel {
 				background: var(--bg-secondary);
 				border: 1px solid var(--border);
@@ -393,23 +398,34 @@ function renderAppearancePage(options: {
 			}
 		</style>
 		${alertHtml}
-		<div class="appearance-grid">
-			<div>
-				<h1>站点外观</h1>
-				<p class="appearance-copy">这里统一控制前台背景、顶部状态栏、导航索引链接和首页首屏文案。</p>
-				<div class="appearance-panel">
-					<h2>背景图上传</h2>
-					<div class="appearance-stack">
-						<form method="post" action="/api/admin/appearance/background/upload" enctype="multipart/form-data" class="appearance-upload-form">
-							<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
-							<input type="file" name="file" accept="${escapeAttribute(getAllowedMediaAcceptValue())}" required data-appearance-upload-input />
-							<button type="submit" class="btn btn-primary">上传并设为当前背景</button>
-						</form>
-						<p class="appearance-copy">当前背景键名可手动修改为媒体库里的任意图片键名，方便复用已有资源。</p>
-					</div>
-				</div>
-				<form method="post" action="/api/admin/appearance" class="appearance-panel">
+		<h1>站点外观</h1>
+		<p class="appearance-copy">这里统一控制前台背景、顶部状态栏、导航索引链接和首页首屏文案。</p>
+		<div class="appearance-panel">
+			<h2>背景图上传</h2>
+			<div class="appearance-stack">
+				<form method="post" action="/api/admin/appearance/background/upload" enctype="multipart/form-data" class="appearance-upload-form">
 					<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+					<input type="file" name="file" accept="${escapeAttribute(getAllowedMediaAcceptValue())}" required data-appearance-upload-input />
+					<button type="submit" class="btn btn-primary">上传并设为当前背景</button>
+				</form>
+				<p class="appearance-copy">当前背景键名可手动修改为媒体库里的任意图片键名，方便复用已有资源。</p>
+			</div>
+		</div>
+		${
+			settings.backgroundImageKey
+				? `<form method="post" action="/api/admin/appearance/background/clear" class="appearance-panel" data-confirm-message="${escapeAttribute("确认移除当前背景图吗？")}">
+						<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+						<h2>移除背景图</h2>
+						<p class="appearance-copy">仅解除前台背景图引用，不会删除 R2 里的原始文件。</p>
+						<button type="submit" class="btn btn-danger">移除当前背景</button>
+					</form>`
+				: ""
+		}
+		<form method="post" action="/api/admin/appearance" class="appearance-grid appearance-form-grid">
+			<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+			<div class="appearance-stack">
+				<section class="appearance-panel">
+					<h2>背景图引用</h2>
 					<div class="form-group">
 						<label for="backgroundImageKey">背景图键名</label>
 						<input
@@ -420,145 +436,121 @@ function renderAppearancePage(options: {
 							placeholder="appearance/background/2026-03-07/xxxx.webp"
 						/>
 					</div>
-					<div class="appearance-content-fieldset">
-						<div class="appearance-list-head">
-							<h3>顶部状态栏与导航索引</h3>
-							<button type="button" class="btn" data-link-add="nav">+ 新增导航</button>
-						</div>
-						<div class="form-group">
-							<label for="headerSubtitle">顶部状态栏文案</label>
-							<input
-								id="headerSubtitle"
-								name="headerSubtitle"
-								class="form-input"
-								value="${escapeAttribute(settings.headerSubtitle)}"
-								maxlength="120"
-							/>
-						</div>
-						<p class="appearance-note">导航支持无限新增，前台会自动换行适配。</p>
-						<div class="appearance-link-list" data-link-list="nav">
-							${renderLinkRows(settings.navLinks, {
-								labelName: "navLinkLabel",
-								hrefName: "navLinkHref",
-								labelText: "导航文案",
-								hrefText: "导航链接",
-								hrefPlaceholder: "/blog",
-								removeLabel: "移除",
-							})}
-						</div>
-						<template data-link-template="nav">
-							${renderLinkRow({
-								labelName: "navLinkLabel",
-								hrefName: "navLinkHref",
-								labelText: "导航文案",
-								hrefText: "导航链接",
-								labelValue: "",
-								hrefValue: "",
-								hrefPlaceholder: "/blog",
-								removeLabel: "移除",
-							})}
-						</template>
+				</section>
+				<section class="appearance-panel">
+					<div class="appearance-list-head">
+						<h2>顶部状态栏与导航索引</h2>
+						<button type="button" class="btn" data-link-add="nav">+ 新增导航</button>
 					</div>
-					<div class="appearance-content-fieldset">
-						<h3>首页首屏文案</h3>
-						<div class="form-group">
-							<label for="heroKicker">顶部标签</label>
-							<input
-								id="heroKicker"
-								name="heroKicker"
-								class="form-input"
-								value="${escapeAttribute(settings.heroKicker)}"
-								maxlength="24"
-							/>
-						</div>
-						<div class="form-group">
-							<label for="heroTitle">主标题</label>
-							<input
-								id="heroTitle"
-								name="heroTitle"
-								class="form-input"
-								value="${escapeAttribute(settings.heroTitle)}"
-								maxlength="120"
-							/>
-						</div>
-						<div class="form-group">
-							<label for="heroIntro">简介</label>
-							<textarea id="heroIntro" name="heroIntro" class="form-textarea" maxlength="600">${escapeHtml(settings.heroIntro)}</textarea>
-						</div>
-						<div class="appearance-list-head">
-							<h4>首页按钮</h4>
-							<button type="button" class="btn" data-link-add="hero">+ 新增按钮</button>
-						</div>
-						<p class="appearance-note">第一个按钮使用主样式，其余按钮会自动使用次级样式。</p>
-						<div class="appearance-link-list" data-link-list="hero">
-							${renderLinkRows(settings.heroActions, {
-								labelName: "heroActionLabel",
-								hrefName: "heroActionHref",
-								labelText: "按钮文案",
-								hrefText: "按钮链接",
-								hrefPlaceholder: "/search",
-								removeLabel: "移除",
-							})}
-						</div>
-						<template data-link-template="hero">
-							${renderLinkRow({
-								labelName: "heroActionLabel",
-								hrefName: "heroActionHref",
-								labelText: "按钮文案",
-								hrefText: "按钮链接",
-								labelValue: "",
-								hrefValue: "",
-								hrefPlaceholder: "/search",
-								removeLabel: "移除",
-							})}
-						</template>
-						<div class="form-group">
-							<label for="heroSignalLabel">右侧卡片标签</label>
-							<input
-								id="heroSignalLabel"
-								name="heroSignalLabel"
-								class="form-input"
-								value="${escapeAttribute(settings.heroSignalLabel)}"
-								maxlength="30"
-							/>
-						</div>
-						<div class="form-group">
-							<label for="heroSignalHeading">右侧卡片标题</label>
-							<input
-								id="heroSignalHeading"
-								name="heroSignalHeading"
-								class="form-input"
-								value="${escapeAttribute(settings.heroSignalHeading)}"
-								maxlength="120"
-							/>
-						</div>
-						<div class="form-group">
-							<label for="heroSignalCopy">右侧卡片描述</label>
-							<textarea id="heroSignalCopy" name="heroSignalCopy" class="form-textarea" maxlength="300">${escapeHtml(settings.heroSignalCopy)}</textarea>
-						</div>
-						<div class="appearance-inline-grid">
-							<div class="form-group">
-								<label for="heroTopicText">关注主题</label>
-								<input
-									id="heroTopicText"
-									name="heroTopicText"
-									class="form-input"
-									value="${escapeAttribute(settings.heroTopicText)}"
-									maxlength="120"
-								/>
-							</div>
-							<div class="form-group">
-								<label for="heroWritingText">写作方式</label>
-								<input
-									id="heroWritingText"
-									name="heroWritingText"
-									class="form-input"
-									value="${escapeAttribute(settings.heroWritingText)}"
-									maxlength="120"
-								/>
-							</div>
-						</div>
+					<div class="form-group">
+						<label for="headerSubtitle">顶部状态栏文案</label>
+						<input
+							id="headerSubtitle"
+							name="headerSubtitle"
+							class="form-input"
+							value="${escapeAttribute(settings.headerSubtitle)}"
+							maxlength="120"
+						/>
 					</div>
+					<p class="appearance-note">导航支持无限新增，前台会自动换行适配。</p>
+					<div class="appearance-link-list" data-link-list="nav">
+						${renderLinkRows(settings.navLinks, {
+							labelName: "navLinkLabel",
+							hrefName: "navLinkHref",
+							labelText: "导航文案",
+							hrefText: "导航链接",
+							hrefPlaceholder: "/blog",
+							removeLabel: "移除",
+						})}
+					</div>
+					<template data-link-template="nav">
+						${renderLinkRow({
+							labelName: "navLinkLabel",
+							hrefName: "navLinkHref",
+							labelText: "导航文案",
+							hrefText: "导航链接",
+							labelValue: "",
+							hrefValue: "",
+							hrefPlaceholder: "/blog",
+							removeLabel: "移除",
+						})}
+					</template>
+				</section>
+				<section class="appearance-panel">
+					<h2>首页首屏文案</h2>
+					<div class="form-group">
+						<label for="heroKicker">顶部标签</label>
+						<input
+							id="heroKicker"
+							name="heroKicker"
+							class="form-input"
+							value="${escapeAttribute(settings.heroKicker)}"
+							maxlength="24"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="heroTitle">主标题</label>
+						<input
+							id="heroTitle"
+							name="heroTitle"
+							class="form-input"
+							value="${escapeAttribute(settings.heroTitle)}"
+							maxlength="120"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="heroIntro">简介</label>
+						<textarea id="heroIntro" name="heroIntro" class="form-textarea" maxlength="600">${escapeHtml(settings.heroIntro)}</textarea>
+					</div>
+					<div class="appearance-list-head">
+						<h4>首页按钮</h4>
+						<button type="button" class="btn" data-link-add="hero">+ 新增按钮</button>
+					</div>
+					<p class="appearance-note">第一个按钮使用主样式，其余按钮会自动使用次级样式。</p>
+					<div class="appearance-link-list" data-link-list="hero">
+						${renderLinkRows(settings.heroActions, {
+							labelName: "heroActionLabel",
+							hrefName: "heroActionHref",
+							labelText: "按钮文案",
+							hrefText: "按钮链接",
+							hrefPlaceholder: "/search",
+							removeLabel: "移除",
+						})}
+					</div>
+					<template data-link-template="hero">
+						${renderLinkRow({
+							labelName: "heroActionLabel",
+							hrefName: "heroActionHref",
+							labelText: "按钮文案",
+							hrefText: "按钮链接",
+							labelValue: "",
+							hrefValue: "",
+							hrefPlaceholder: "/search",
+							removeLabel: "移除",
+						})}
+					</template>
+				</section>
+			</div>
+			<div class="appearance-stack">
+				<section class="appearance-panel">
+					<h2>实时预览</h2>
+					<div
+						class="appearance-stage"
+						data-appearance-stage
+						data-background-scale="${escapeAttribute(String(settings.backgroundScale))}"
+						data-background-blur="${escapeAttribute(String(settings.backgroundBlur))}"
+						data-background-position-x="${escapeAttribute(String(settings.backgroundPositionX))}"
+						data-background-position-y="${escapeAttribute(String(settings.backgroundPositionY))}"
+					>
+						${previewImage}
+						<div class="appearance-stage-overlay"></div>
+						<div class="appearance-stage-label">前台背景层</div>
+						<div class="appearance-focus" data-appearance-focus${focusHidden}></div>
+					</div>
+					<p class="appearance-hint">直接在预览图上点击或拖动，就能快速调整裁切焦点位置。</p>
+				</section>
+				<section class="appearance-panel">
+					<h2>背景视觉参数</h2>
 					<div class="appearance-controls">
 						<div class="appearance-range">
 							<div class="appearance-range-meta">
@@ -589,40 +581,64 @@ function renderAppearancePage(options: {
 							<input id="backgroundPositionY" name="backgroundPositionY" type="range" min="0" max="100" value="${escapeAttribute(String(settings.backgroundPositionY))}" data-appearance-control="backgroundPositionY" />
 						</div>
 					</div>
+				</section>
+				<section class="appearance-panel">
+					<h2>右侧信息卡文案</h2>
+					<div class="form-group">
+						<label for="heroSignalLabel">右侧卡片标签</label>
+						<input
+							id="heroSignalLabel"
+							name="heroSignalLabel"
+							class="form-input"
+							value="${escapeAttribute(settings.heroSignalLabel)}"
+							maxlength="30"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="heroSignalHeading">右侧卡片标题</label>
+						<input
+							id="heroSignalHeading"
+							name="heroSignalHeading"
+							class="form-input"
+							value="${escapeAttribute(settings.heroSignalHeading)}"
+							maxlength="120"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="heroSignalCopy">右侧卡片描述</label>
+						<textarea id="heroSignalCopy" name="heroSignalCopy" class="form-textarea" maxlength="300">${escapeHtml(settings.heroSignalCopy)}</textarea>
+					</div>
+					<div class="appearance-inline-grid">
+						<div class="form-group">
+							<label for="heroTopicText">关注主题</label>
+							<input
+								id="heroTopicText"
+								name="heroTopicText"
+								class="form-input"
+								value="${escapeAttribute(settings.heroTopicText)}"
+								maxlength="120"
+							/>
+						</div>
+						<div class="form-group">
+							<label for="heroWritingText">写作方式</label>
+							<input
+								id="heroWritingText"
+								name="heroWritingText"
+								class="form-input"
+								value="${escapeAttribute(settings.heroWritingText)}"
+								maxlength="120"
+							/>
+						</div>
+					</div>
+				</section>
+				<section class="appearance-panel">
 					<div class="appearance-actions">
 						<button type="submit" class="btn btn-primary">保存外观设置</button>
 						<a href="/api/admin/media" class="btn">打开媒体库</a>
 					</div>
-				</form>
-				${
-					settings.backgroundImageKey
-						? `<form method="post" action="/api/admin/appearance/background/clear" class="appearance-panel" data-confirm-message="${escapeAttribute("确认移除当前背景图吗？")}">
-								<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
-								<h2>移除背景图</h2>
-								<p class="appearance-copy">仅解除前台背景图引用，不会删除 R2 里的原始文件。</p>
-								<button type="submit" class="btn btn-danger">移除当前背景</button>
-							</form>`
-						: ""
-				}
+				</section>
 			</div>
-			<div class="appearance-panel">
-				<h2>实时预览</h2>
-				<div
-					class="appearance-stage"
-					data-appearance-stage
-					data-background-scale="${escapeAttribute(String(settings.backgroundScale))}"
-					data-background-blur="${escapeAttribute(String(settings.backgroundBlur))}"
-					data-background-position-x="${escapeAttribute(String(settings.backgroundPositionX))}"
-					data-background-position-y="${escapeAttribute(String(settings.backgroundPositionY))}"
-				>
-					${previewImage}
-					<div class="appearance-stage-overlay"></div>
-					<div class="appearance-stage-label">前台背景层</div>
-					<div class="appearance-focus" data-appearance-focus${focusHidden}></div>
-				</div>
-				<p class="appearance-hint">直接在预览图上点击或拖动，就能快速调整裁切焦点位置。</p>
-			</div>
-		</div>
+		</form>
 	`;
 }
 
