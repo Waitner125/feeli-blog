@@ -183,11 +183,20 @@ function isInternalHref(href: string) {
 		--hero-scroll-shift: 0px;
 		--hero-opacity-scale: calc(var(--hero-card-opacity, 14) / 14);
 		--glass-panel-blur: var(--hero-card-blur, 18px);
+		--hero-blur-effective: min(calc(var(--hero-card-blur, 18px) * 1.6), 84px);
 		position: relative;
 		display: grid;
 		grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
 		gap: clamp(1.4rem, 2vw, 2.2rem);
 		padding: clamp(1.5rem, 1rem + 3vw, 3rem);
+		background-color: rgba(
+			255,
+			255,
+			255,
+			calc((var(--hero-card-opacity, 14) / 100) * 0.82)
+		);
+		backdrop-filter: blur(var(--hero-blur-effective)) saturate(152%);
+		-webkit-backdrop-filter: blur(var(--hero-blur-effective)) saturate(152%);
 		box-shadow:
 			0 30px 90px -60px rgba(8, 18, 34, 0.34),
 			0 12px 24px -18px rgba(8, 18, 34, 0.18);
