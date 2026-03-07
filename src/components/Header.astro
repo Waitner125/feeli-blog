@@ -314,7 +314,15 @@ function isLinkActive(href: string) {
 	}
 
 	:global(html[data-nav-condensed]) .site-nav-shell-scroll {
-		width: auto;
+		width: calc(
+			100% -
+				(
+					max(
+							var(--nav-shell-condensed-inset-desktop),
+							calc((100% - var(--nav-shell-max-width)) / 2)
+						) * 2
+				)
+		);
 		margin-inline: max(
 			var(--nav-shell-condensed-inset-desktop),
 			calc((100% - var(--nav-shell-max-width)) / 2)
