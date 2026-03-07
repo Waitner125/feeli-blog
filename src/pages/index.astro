@@ -43,7 +43,13 @@ const latestUpdate = recentPosts[0]?.publishedAt
 ---
 
 <Base title={siteConfig.name} description={siteConfig.description}>
-	<section class="home-hero glass-panel">
+	<section class="home-hero glass-panel" data-hero-depth>
+		<div class="hero-atmosphere" aria-hidden="true">
+			<span class="hero-aura hero-aura-primary"></span>
+			<span class="hero-aura hero-aura-secondary"></span>
+			<span class="hero-grid"></span>
+			<span class="hero-beam"></span>
+		</div>
 		<div class="home-hero-main">
 			<span class="section-kicker">云端记录</span>
 			<h1 class="page-title">把工程判断写清楚，把技术细节写漂亮。</h1>
@@ -59,6 +65,24 @@ const latestUpdate = recentPosts[0]?.publishedAt
 			</div>
 		</div>
 		<div class="home-hero-side">
+			<article class="hero-signal-card" data-tilt-card>
+				<div class="hero-signal-glow" aria-hidden="true"></div>
+				<span class="hero-signal-label">Scene Depth</span>
+				<strong class="hero-signal-heading">首页会跟着你的视线轻轻转一下</strong>
+				<p class="hero-signal-copy">
+					不是把页面做得很吵，而是只让首屏层次、信息胶囊和按钮反馈更有呼吸感。
+				</p>
+				<div class="hero-signal-row">
+					<span class="hero-signal-chip">Mouse Sync</span>
+					<span class="hero-signal-chip">Soft Orbit</span>
+					<span class="hero-signal-chip">Card Lift</span>
+				</div>
+				<div class="hero-signal-bars" aria-hidden="true">
+					<span></span>
+					<span></span>
+					<span></span>
+				</div>
+			</article>
 			<div class="hero-metric">
 				<span>最近更新</span>
 				<strong>{latestUpdate}</strong>
@@ -106,10 +130,106 @@ const latestUpdate = recentPosts[0]?.publishedAt
 
 <style>
 	.home-hero {
+		--hero-pointer-x: 0;
+		--hero-pointer-y: 0;
+		--hero-scroll-shift: 0px;
+		position: relative;
 		display: grid;
 		grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.9fr);
 		gap: clamp(1.4rem, 2vw, 2.2rem);
 		padding: clamp(1.5rem, 1rem + 3vw, 3rem);
+		background:
+			linear-gradient(140deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)),
+			radial-gradient(circle at 18% 20%, rgba(10, 132, 255, 0.14), transparent 32%);
+		box-shadow:
+			0 30px 90px -60px rgba(8, 18, 34, 0.34),
+			0 12px 24px -18px rgba(8, 18, 34, 0.18);
+	}
+
+	.home-hero > * {
+		position: relative;
+		z-index: 2;
+	}
+
+	.hero-atmosphere {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		overflow: hidden;
+	}
+
+	.hero-aura,
+	.hero-grid,
+	.hero-beam {
+		position: absolute;
+		transition:
+			transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+			opacity 260ms ease;
+	}
+
+	.hero-aura {
+		border-radius: 50%;
+		filter: blur(10px);
+		opacity: 0.88;
+	}
+
+	.hero-aura-primary {
+		top: -4rem;
+		right: -2rem;
+		width: 18rem;
+		height: 18rem;
+		background: radial-gradient(circle, rgba(10, 132, 255, 0.28), transparent 68%);
+		transform: translate3d(
+			calc(var(--hero-pointer-x) * -18px),
+			calc(var(--hero-pointer-y) * -14px),
+			0
+		);
+	}
+
+	.hero-aura-secondary {
+		left: 26%;
+		bottom: -6rem;
+		width: 16rem;
+		height: 16rem;
+		background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 70%);
+		transform: translate3d(
+			calc(var(--hero-pointer-x) * 14px),
+			calc(var(--hero-pointer-y) * 10px),
+			0
+		);
+	}
+
+	.hero-grid {
+		inset: 0;
+		background-image:
+			linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+		background-size: 3.25rem 3.25rem;
+		mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 88%);
+		opacity: 0.5;
+		transform: translate3d(
+			calc(var(--hero-pointer-x) * -8px),
+			calc(var(--hero-scroll-shift) * 0.08),
+			0
+		);
+	}
+
+	.hero-beam {
+		right: 12%;
+		top: -10%;
+		width: 18rem;
+		height: 130%;
+		background: linear-gradient(
+			180deg,
+			rgba(255, 255, 255, 0),
+			rgba(255, 255, 255, 0.18),
+			rgba(255, 255, 255, 0)
+		);
+		opacity: 0.46;
+		transform:
+			rotate(24deg)
+			translate3d(calc(var(--hero-pointer-x) * -10px), calc(var(--hero-pointer-y) * 12px), 0);
 	}
 
 	.home-hero-main,
@@ -117,6 +237,23 @@ const latestUpdate = recentPosts[0]?.publishedAt
 		display: grid;
 		align-content: start;
 		gap: 1.1rem;
+		transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.home-hero-main {
+		transform: translate3d(
+			calc(var(--hero-pointer-x) * 12px),
+			calc(var(--hero-pointer-y) * 10px + var(--hero-scroll-shift) * -0.05),
+			0
+		);
+	}
+
+	.home-hero-side {
+		transform: translate3d(
+			calc(var(--hero-pointer-x) * -10px),
+			calc(var(--hero-pointer-y) * -8px + var(--hero-scroll-shift) * 0.04),
+			0
+		);
 	}
 
 	.home-hero-main .page-title {
@@ -137,10 +274,171 @@ const latestUpdate = recentPosts[0]?.publishedAt
 	}
 
 	.home-hero-side {
-		padding: 0.5rem;
+		padding: 0.35rem;
 		border-radius: var(--radius-card);
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+	}
+
+	.home-hero-main > * {
+		animation: home-float-in 780ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	.home-hero-main > :nth-child(1) {
+		animation-delay: 40ms;
+	}
+
+	.home-hero-main > :nth-child(2) {
+		animation-delay: 120ms;
+	}
+
+	.home-hero-main > :nth-child(3) {
+		animation-delay: 190ms;
+	}
+
+	.home-hero-main > :nth-child(4) {
+		animation-delay: 260ms;
+	}
+
+	.hero-signal-card {
+		position: relative;
+		display: grid;
+		gap: 0.85rem;
+		padding: 1.25rem;
+		border-radius: calc(var(--radius-card) + 4px);
+		background:
+			linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1)),
+			radial-gradient(circle at 18% 18%, rgba(10, 132, 255, 0.18), transparent 42%);
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		box-shadow: 0 24px 50px -34px rgba(8, 18, 34, 0.3);
+		transform:
+			perspective(1200px)
+			rotateX(var(--tilt-rotate-x, 0deg))
+			rotateY(var(--tilt-rotate-y, 0deg))
+			scale3d(1.01, 1.01, 1.01);
+		transform-style: preserve-3d;
+		transition:
+			transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+			box-shadow 220ms ease,
+			border-color 220ms ease;
+		opacity: 0;
+		animation: home-reveal-in 820ms cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation-delay: 130ms;
+	}
+
+	.hero-signal-card > * {
+		position: relative;
+		z-index: 1;
+	}
+
+	.hero-signal-glow {
+		position: absolute;
+		inset: auto auto -3.25rem -2.5rem;
+		width: 11rem;
+		height: 11rem;
+		border-radius: 50%;
+		background: radial-gradient(circle, rgba(10, 132, 255, 0.24), transparent 70%);
+		filter: blur(14px);
+		opacity: 0.78;
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * -6px),
+			calc(var(--tilt-shift-y, 0) * -6px),
+			0
+		);
+	}
+
+	.hero-signal-label {
+		width: fit-content;
+		padding: 0.42rem 0.72rem;
+		border-radius: var(--radius-pill);
+		background: rgba(255, 255, 255, 0.14);
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		font-size: 0.74rem;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--color-accent-hover);
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * 3px),
+			calc(var(--tilt-shift-y, 0) * 3px),
+			24px
+		);
+	}
+
+	.hero-signal-heading {
+		font-size: clamp(1.25rem, 1.05rem + 0.6vw, 1.72rem);
+		line-height: 1.2;
+		letter-spacing: -0.04em;
+		color: var(--color-text);
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * 4px),
+			calc(var(--tilt-shift-y, 0) * 4px),
+			30px
+		);
+	}
+
+	.hero-signal-copy {
+		font-size: 0.95rem;
+		line-height: 1.75;
+		color: var(--color-text-secondary);
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * 2px),
+			calc(var(--tilt-shift-y, 0) * 2px),
+			18px
+		);
+	}
+
+	.hero-signal-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+		transform: translate3d(
+			calc(var(--tilt-shift-x, 0) * 2px),
+			calc(var(--tilt-shift-y, 0) * 2px),
+			20px
+		);
+	}
+
+	.hero-signal-chip {
+		padding: 0.48rem 0.76rem;
+		border-radius: var(--radius-pill);
+		background: rgba(255, 255, 255, 0.16);
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		font-size: 0.78rem;
+		color: var(--color-text-secondary);
+	}
+
+	.hero-signal-bars {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		align-items: end;
+		gap: 0.55rem;
+		height: 4.25rem;
+		transform: translateZ(18px);
+	}
+
+	.hero-signal-bars span {
+		display: block;
+		border-radius: 999px 999px 14px 14px;
+		background:
+			linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(10, 132, 255, 0.32));
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+		transform-origin: bottom center;
+		animation: hero-bar-wave 2.8s ease-in-out infinite;
+	}
+
+	.hero-signal-bars span:nth-child(1) {
+		height: 64%;
+		animation-delay: 0ms;
+	}
+
+	.hero-signal-bars span:nth-child(2) {
+		height: 100%;
+		animation-delay: 180ms;
+	}
+
+	.hero-signal-bars span:nth-child(3) {
+		height: 78%;
+		animation-delay: 320ms;
 	}
 
 	.hero-metric {
@@ -152,6 +450,33 @@ const latestUpdate = recentPosts[0]?.publishedAt
 		border: 1px solid rgba(255, 255, 255, 0.08);
 		backdrop-filter: blur(10px) saturate(120%);
 		-webkit-backdrop-filter: blur(10px) saturate(120%);
+		transform: translate3d(0, 0, 0);
+		opacity: 0;
+		animation: home-float-in 780ms cubic-bezier(0.22, 1, 0.36, 1) both;
+		transition:
+			transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+			background-color 220ms ease,
+			border-color 220ms ease,
+			box-shadow 220ms ease;
+	}
+
+	.hero-metric:nth-of-type(2) {
+		animation-delay: 200ms;
+	}
+
+	.hero-metric:nth-of-type(3) {
+		animation-delay: 260ms;
+	}
+
+	.hero-metric:nth-of-type(4) {
+		animation-delay: 320ms;
+	}
+
+	.hero-metric:hover {
+		transform: translate3d(0, -4px, 0);
+		background: rgba(255, 255, 255, 0.1);
+		border-color: rgba(255, 255, 255, 0.14);
+		box-shadow: 0 18px 34px -28px rgba(8, 18, 34, 0.22);
 	}
 
 	.hero-metric span {
@@ -185,9 +510,75 @@ const latestUpdate = recentPosts[0]?.publishedAt
 		gap: 1.2rem;
 	}
 
+	.home-grid :global(.post-card:nth-child(1)) {
+		animation-delay: 80ms;
+	}
+
+	.home-grid :global(.post-card:nth-child(2)) {
+		animation-delay: 130ms;
+	}
+
+	.home-grid :global(.post-card:nth-child(3)) {
+		animation-delay: 180ms;
+	}
+
+	.home-grid :global(.post-card:nth-child(4)) {
+		animation-delay: 230ms;
+	}
+
+	@keyframes home-float-in {
+		from {
+			opacity: 0;
+			transform: translate3d(0, 26px, 0) scale(0.985);
+		}
+
+		to {
+			opacity: 1;
+			transform: translate3d(0, 0, 0) scale(1);
+		}
+	}
+
+	@keyframes home-reveal-in {
+		from {
+			opacity: 0;
+			filter: blur(10px);
+		}
+
+		to {
+			opacity: 1;
+			filter: blur(0);
+		}
+	}
+
+	@keyframes hero-bar-wave {
+		0%,
+		100% {
+			transform: scaleY(0.92);
+			opacity: 0.82;
+		}
+
+		50% {
+			transform: scaleY(1.08);
+			opacity: 1;
+		}
+	}
+
 	@media (max-width: 960px) {
 		.home-hero {
 			grid-template-columns: 1fr;
+		}
+
+		.hero-aura-primary {
+			right: -4rem;
+			width: 14rem;
+			height: 14rem;
+		}
+
+		.hero-aura-secondary {
+			left: -2rem;
+			bottom: -5rem;
+			width: 12rem;
+			height: 12rem;
 		}
 
 		.section-head {
@@ -197,6 +588,37 @@ const latestUpdate = recentPosts[0]?.publishedAt
 
 		.home-grid {
 			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.home-hero {
+			padding: 1.2rem;
+		}
+
+		.hero-grid,
+		.hero-beam {
+			opacity: 0.32;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-hero,
+		.home-hero-main,
+		.home-hero-side,
+		.hero-aura,
+		.hero-grid,
+		.hero-beam,
+		.hero-signal-card,
+		.hero-signal-glow,
+		.hero-metric {
+			animation: none;
+			transition: none;
+			transform: none;
+		}
+
+		.hero-signal-bars span {
+			animation: none;
 		}
 	}
 </style>
