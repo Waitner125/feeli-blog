@@ -278,6 +278,11 @@ const cardClassName = `post-card glass-panel ${coverSide === "right" ? "post-car
 		clip-path: polygon(0 0, 100% 0, 100% 100%, 10% 100%);
 	}
 
+	.post-card-cover-right .post-card-cover img {
+		transform-origin: right center;
+		transform: scale(0.88);
+	}
+
 	.post-card-cover-right .post-card-cover-fallback {
 		padding-left: clamp(1.9rem, 1.5rem + 1vw, 2.6rem);
 	}
@@ -299,6 +304,11 @@ const cardClassName = `post-card glass-panel ${coverSide === "right" ? "post-car
 	.post-card:hover .post-card-cover img {
 		transform: scale(1.06);
 		filter: saturate(1.08);
+	}
+
+	.post-card-cover-right:hover .post-card-cover img {
+		transform-origin: right center;
+		transform: scale(0.94);
 	}
 
 	.post-card:hover .post-card-cover-fallback::before {
@@ -330,6 +340,12 @@ const cardClassName = `post-card glass-panel ${coverSide === "right" ? "post-car
 			min-height: clamp(11rem, 35vw, 14rem);
 			-webkit-clip-path: none;
 			clip-path: none;
+		}
+
+		.post-card-cover-right .post-card-cover img,
+		.post-card-cover-right:hover .post-card-cover img {
+			transform-origin: center;
+			transform: scale(1.01);
 		}
 
 		.post-card-content,
