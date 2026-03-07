@@ -310,8 +310,13 @@ function isLinkActive(href: string) {
 	}
 
 	:global(html[data-nav-condensed]) .site-nav-shell-scroll {
-		max-width: var(--nav-shell-max-width);
-		margin-inline: auto;
+		margin-inline: max(
+			var(--nav-shell-condensed-inset-desktop),
+			calc((100% - var(--nav-shell-max-width)) / 2)
+		);
+		border-radius: var(--nav-shell-condensed-radius);
+		overflow-x: auto;
+		overflow-y: hidden;
 	}
 
 	:global(html[data-nav-condensed]) .site-nav-shell {
@@ -385,6 +390,11 @@ function isLinkActive(href: string) {
 		:global(html[data-nav-condensed]) .site-nav-shell {
 			transform: none;
 		}
+
+		:global(html[data-nav-condensed]) .site-nav-shell-scroll {
+			margin-inline: var(--nav-shell-condensed-inset-mobile);
+			border-radius: 28px;
+		}
 	}
 
 	@media (max-width: 640px) {
@@ -426,6 +436,10 @@ function isLinkActive(href: string) {
 		}
 
 		:global(html[data-nav-condensed]) .site-nav::before {
+			border-radius: 24px;
+		}
+
+		:global(html[data-nav-condensed]) .site-nav-shell-scroll {
 			border-radius: 24px;
 		}
 	}
