@@ -137,4 +137,12 @@ describe("源码回归保护", () => {
 		const source = await readFile("src/middleware.ts", "utf8");
 		assert.ok(source.includes("https://challenges.cloudflare.com"));
 	});
+
+	test("搜索组件将标签筛选放入折叠面板并外显已选标签", async () => {
+		const source = await readFile("src/components/Search.astro", "utf8");
+		assert.ok(source.includes("search-tags-panel"));
+		assert.ok(source.includes("search-selected-tags"));
+		assert.ok(source.includes("search-selected-chip"));
+		assert.ok(source.includes("调整标签（已选"));
+	});
 });

@@ -21,6 +21,7 @@ const {
 }: Props = Astro.props;
 
 const selectedTagSet = new Set(selectedTags);
+const selectedTagItems = tags.filter((tag) => selectedTagSet.has(tag.slug));
 ---
 
 <div class="search-container">
@@ -46,26 +47,47 @@ const selectedTagSet = new Set(selectedTags);
 		) : null}
 		<button type="submit" class="button search-button">开始搜索</button>
 
-		{tags.length > 0 ? (
-			<fieldset class="search-tags">
-				<legend>按标签筛选</legend>
-				<div class="search-tag-list">
-					{tags.map((tag) => (
-						<label class="search-tag-chip">
-							<input
-								type="checkbox"
-								name="tags"
-								value={tag.slug}
-								checked={selectedTagSet.has(tag.slug)}
-							/>
-							<span>{tag.name}</span>
-						</label>
-					))}
+			{tags.length > 0 ? (
+				<div class="search-tags-shell">
+					<div class="search-tags-head">
+						<span class="search-tags-head-label">标签筛选</span>
+						{selectedTagItems.length > 0 ? (
+							<div class="search-selected-tags" aria-live="polite">
+								{selectedTagItems.map((tag) => (
+									<span class="search-selected-chip">{tag.name}</span>
+								))}
+							</div>
+						) : (
+							<span class="search-selected-empty">未选择标签</span>
+						)}
+					</div>
+					<details class="search-tags-panel">
+						<summary>
+							{selectedTagItems.length > 0
+								? `调整标签（已选 ${selectedTagItems.length}）`
+								: "展开选择标签"}
+						</summary>
+						<fieldset class="search-tags">
+							<legend class="sr-only">按标签筛选</legend>
+							<div class="search-tag-list">
+								{tags.map((tag) => (
+									<label class="search-tag-chip">
+										<input
+											type="checkbox"
+											name="tags"
+											value={tag.slug}
+											checked={selectedTagSet.has(tag.slug)}
+										/>
+										<span>{tag.name}</span>
+									</label>
+								))}
+							</div>
+						</fieldset>
+					</details>
 				</div>
-			</fieldset>
-		) : null}
-	</form>
-	<div id="search-results" class="search-results"></div>
+			) : null}
+		</form>
+		<div id="search-results" class="search-results"></div>
 </div>
 
 <style>
@@ -117,17 +139,95 @@ const selectedTagSet = new Set(selectedTags);
 		background: var(--color-bg-tertiary);
 	}
 
-	.search-button {
-		padding: 0.95rem 1.2rem;
-	}
+		.search-button {
+			padding: 0.95rem 1.2rem;
+		}
 
-	.search-tags {
-		width: 100%;
-		border: none;
-		padding: 0;
-		margin: 0;
-		display: grid;
-		gap: 0.55rem;
+		.search-tags-shell {
+			width: 100%;
+			display: grid;
+			gap: 0.5rem;
+		}
+
+		.search-tags-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.6rem;
+			flex-wrap: wrap;
+		}
+
+		.search-tags-head-label {
+			font-size: 0.82rem;
+			color: var(--color-text-muted);
+		}
+
+		.search-selected-tags {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.45rem;
+			justify-content: flex-end;
+		}
+
+		.search-selected-chip {
+			padding: 0.3rem 0.62rem;
+			border-radius: var(--radius-pill);
+			border: 1px solid rgba(10, 132, 255, 0.4);
+			background: rgba(10, 132, 255, 0.14);
+			font-size: 0.78rem;
+			color: var(--color-text);
+		}
+
+		.search-selected-empty {
+			font-size: 0.78rem;
+			color: var(--color-text-muted);
+		}
+
+		.search-tags-panel {
+			border: 1px solid rgba(255, 255, 255, 0.14);
+			border-radius: 0.9rem;
+			background: rgba(255, 255, 255, 0.04);
+			overflow: hidden;
+		}
+
+		.search-tags-panel summary {
+			list-style: none;
+			cursor: pointer;
+			padding: 0.66rem 0.82rem;
+			font-size: 0.83rem;
+			color: var(--color-text-secondary);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			user-select: none;
+		}
+
+		.search-tags-panel summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.search-tags-panel summary::after {
+			content: "▾";
+			font-size: 0.75rem;
+			opacity: 0.85;
+			transition: transform var(--transition);
+		}
+
+		.search-tags-panel[open] summary::after {
+			transform: rotate(180deg);
+		}
+
+		.search-tags-panel[open] summary {
+			border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+		}
+
+		.search-tags {
+			width: 100%;
+			border: none;
+			padding: 0.68rem 0.82rem 0.82rem;
+			margin: 0;
+			display: grid;
+			gap: 0.55rem;
 	}
 
 	.search-tags legend {
@@ -154,9 +254,21 @@ const selectedTagSet = new Set(selectedTags);
 		cursor: pointer;
 	}
 
-	.search-tag-chip input {
-		margin: 0;
-	}
+		.search-tag-chip input {
+			margin: 0;
+		}
+
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
 
 	.search-results {
 		margin-top: var(--space-md);
