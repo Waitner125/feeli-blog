@@ -68,14 +68,26 @@ function isInternalHref(href: string) {
 			<span class="hero-beam"></span>
 		</div>
 		<div class="home-hero-main">
-			<span class="section-kicker">{homepageAppearance.heroKicker}</span>
-			<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
-			<p class="page-intro">{homepageAppearance.heroIntro}</p>
-			<div class="hero-actions">
-				{
-					heroActions.map((action, index) => (
-						index === 1 ? (
-							<span class="hero-search-bridge" transition:name="search-entry">
+			<div class="hero-main-media" aria-hidden="true"></div>
+			<div class="home-hero-copy">
+				<span class="section-kicker">{homepageAppearance.heroKicker}</span>
+				<h1 class="page-title">{homepageAppearance.heroTitle}</h1>
+				<p class="page-intro">{homepageAppearance.heroIntro}</p>
+				<div class="hero-actions">
+					{
+						heroActions.map((action, index) => (
+							index === 1 ? (
+								<span class="hero-search-bridge" transition:name="search-entry">
+									<a
+										href={action.href}
+										class:list={["button", { "button-secondary": index > 0 }]}
+										target={isInternalHref(action.href) ? undefined : "_blank"}
+										rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
+									>
+										{action.label}
+									</a>
+								</span>
+							) : (
 								<a
 									href={action.href}
 									class:list={["button", { "button-secondary": index > 0 }]}
@@ -84,19 +96,10 @@ function isInternalHref(href: string) {
 								>
 									{action.label}
 								</a>
-							</span>
-						) : (
-							<a
-								href={action.href}
-								class:list={["button", { "button-secondary": index > 0 }]}
-								target={isInternalHref(action.href) ? undefined : "_blank"}
-								rel={isInternalHref(action.href) ? undefined : "noopener noreferrer"}
-							>
-								{action.label}
-							</a>
-						)
-					))
-				}
+							)
+						))
+					}
+				</div>
 			</div>
 		</div>
 		<div class="home-hero-side">
@@ -263,12 +266,13 @@ function isInternalHref(href: string) {
 	.home-hero-main,
 	.home-hero-side {
 		display: grid;
-		align-content: start;
 		gap: 1.1rem;
 		transition: transform var(--nav-motion-surface);
 	}
 
 	.home-hero-main {
+		grid-template-rows: minmax(10rem, 1fr) auto;
+		align-content: stretch;
 		transform: translate3d(
 			calc(var(--hero-pointer-x) * 12px),
 			calc(var(--hero-pointer-y) * 10px + var(--hero-scroll-shift) * -0.05),
@@ -276,7 +280,60 @@ function isInternalHref(href: string) {
 		);
 	}
 
+	.home-hero-copy {
+		display: grid;
+		align-content: start;
+		gap: 1.1rem;
+	}
+
+	.hero-main-media {
+		position: relative;
+		border-radius: calc(var(--radius-card) + 4px);
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		background:
+			linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+			radial-gradient(circle at 16% 24%, rgba(10, 132, 255, 0.24), transparent 52%);
+		overflow: hidden;
+		min-height: clamp(8.8rem, 22vh, 14rem);
+		opacity: 0;
+		animation: home-reveal-in 820ms cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation-delay: 80ms;
+	}
+
+	.hero-main-media::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background:
+			linear-gradient(
+				128deg,
+				rgba(255, 255, 255, 0.18) 0%,
+				rgba(255, 255, 255, 0.04) 42%,
+				rgba(255, 255, 255, 0) 100%
+			),
+			repeating-linear-gradient(
+				115deg,
+				rgba(255, 255, 255, 0.1) 0 11px,
+				rgba(255, 255, 255, 0.03) 11px 22px
+			);
+	}
+
+	.hero-main-media::after {
+		content: "图片预留位";
+		position: absolute;
+		right: 0.9rem;
+		bottom: 0.75rem;
+		padding: 0.36rem 0.62rem;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.18);
+		background: rgba(15, 23, 42, 0.3);
+		color: rgba(255, 255, 255, 0.78);
+		font-size: 0.72rem;
+		letter-spacing: 0.08em;
+	}
+
 	.home-hero-side {
+		align-content: start;
 		transform: translate3d(
 			calc(var(--hero-pointer-x) * -10px),
 			calc(var(--hero-pointer-y) * -8px + var(--hero-scroll-shift) * 0.04),
@@ -308,23 +365,23 @@ function isInternalHref(href: string) {
 		border: 1px solid rgba(255, 255, 255, 0.08);
 	}
 
-	.home-hero-main > * {
+	.home-hero-copy > * {
 		animation: home-float-in 780ms cubic-bezier(0.22, 1, 0.36, 1) both;
 	}
 
-	.home-hero-main > :nth-child(1) {
+	.home-hero-copy > :nth-child(1) {
 		animation-delay: 40ms;
 	}
 
-	.home-hero-main > :nth-child(2) {
+	.home-hero-copy > :nth-child(2) {
 		animation-delay: 120ms;
 	}
 
-	.home-hero-main > :nth-child(3) {
+	.home-hero-copy > :nth-child(3) {
 		animation-delay: 190ms;
 	}
 
-	.home-hero-main > :nth-child(4) {
+	.home-hero-copy > :nth-child(4) {
 		animation-delay: 260ms;
 	}
 
@@ -596,6 +653,14 @@ function isInternalHref(href: string) {
 			grid-template-columns: 1fr;
 		}
 
+		.home-hero-main {
+			grid-template-rows: auto auto;
+		}
+
+		.hero-main-media {
+			min-height: clamp(8rem, 32vw, 11rem);
+		}
+
 		.hero-aura-primary {
 			right: -4rem;
 			width: 14rem;
@@ -644,6 +709,7 @@ function isInternalHref(href: string) {
 		.hero-aura,
 		.hero-grid,
 		.hero-beam,
+		.hero-main-media,
 		.hero-signal-card,
 		.hero-signal-glow,
 		.hero-metric {
