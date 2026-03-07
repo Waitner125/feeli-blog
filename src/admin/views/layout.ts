@@ -222,6 +222,14 @@ export const adminSharedStyles = `
 			letter-spacing: -0.03em;
 		}
 
+		.sidebar-brand-note {
+			margin-top: 0.35rem;
+			color: var(--text-muted);
+			font-size: 0.82rem;
+			line-height: 1.5;
+			letter-spacing: 0.02em;
+		}
+
 		.sidebar-nav {
 			display: grid;
 			gap: 0.55rem;
@@ -278,6 +286,11 @@ export const adminSharedStyles = `
 			border-radius: calc(var(--radius-lg) - 8px);
 			background: var(--bg-tertiary);
 			border: 1px solid var(--border);
+		}
+
+		.admin-toolbar {
+			display: grid;
+			gap: 0.65rem;
 		}
 
 		.sidebar-footer-links {
@@ -1018,15 +1031,18 @@ ${adminSharedStyles}
 			<div class="sidebar-panel">
 				<div class="sidebar-brand">
 					<div class="sidebar-brand-title">管理后台</div>
+					<p class="sidebar-brand-note">主页同款视觉</p>
 				</div>
 				<nav class="sidebar-nav">
 					${renderNav(title)}
 				</nav>
 				<div class="sidebar-footer">
-					<div class="sidebar-footer-links">
-						<a href="/" target="_blank" rel="noopener noreferrer" class="btn btn-sm">查看站点</a>
+					<div class="admin-toolbar">
+						<div class="sidebar-footer-links">
+							<a href="/" target="_blank" rel="noopener noreferrer" class="btn btn-sm">查看站点</a>
+						</div>
+						${logoutForm}
 					</div>
-					${logoutForm}
 				</div>
 			</div>
 		</aside>

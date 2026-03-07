@@ -32,6 +32,17 @@ ${adminSharedStyles}
 			width: min(560px, calc(100vw - 2rem));
 		}
 
+		.login-hero {
+			margin-bottom: 0.8rem;
+			padding: 0.58rem 0.9rem;
+			border-radius: var(--radius-pill);
+			border: 1px solid var(--border);
+			background: var(--bg-tertiary);
+			color: var(--text-muted);
+			font-size: 0.82rem;
+			letter-spacing: 0.03em;
+		}
+
 		.login-card {
 			position: relative;
 			background: var(--bg-secondary);
@@ -208,6 +219,7 @@ ${adminSharedStyles}
 </head>
 <body>
 	<div class="login-shell">
+		<div class="login-hero">主页同款后台</div>
 		<section class="login-card">
 			<div class="login-card-inner">
 				<div class="login-card-header">
