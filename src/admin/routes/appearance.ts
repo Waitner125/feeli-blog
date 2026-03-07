@@ -473,16 +473,6 @@ function renderAppearancePage(options: {
 							class="appearance-upload-input"
 							data-appearance-upload-input
 						/>
-						<button
-							type="submit"
-							formaction="/api/admin/appearance/background/upload"
-							formmethod="post"
-							formnovalidate
-							data-appearance-upload-submit
-							hidden
-						>
-							上传并设为当前背景
-						</button>
 					</div>
 					<div class="form-group">
 						<label for="backgroundImageKey">背景图键名</label>

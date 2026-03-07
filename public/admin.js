@@ -521,9 +521,6 @@ const appearanceUploadDropzone = document.querySelector(
 	"[data-appearance-upload-dropzone]",
 );
 const uploadInput = document.querySelector("[data-appearance-upload-input]");
-const appearanceUploadSubmit = document.querySelector(
-	"[data-appearance-upload-submit]",
-);
 const appearanceControls = {
 	backgroundScale: document.querySelector(
 		'[data-appearance-control="backgroundScale"]',
@@ -642,12 +639,10 @@ function submitAppearanceUpload() {
 		return;
 	}
 
-	if (appearanceUploadSubmit instanceof HTMLButtonElement) {
-		uploadInput.form.requestSubmit(appearanceUploadSubmit);
-		return;
-	}
-
-	uploadInput.form.requestSubmit();
+	const form = uploadInput.form;
+	form.action = "/api/admin/appearance/background/upload";
+	form.method = "post";
+	form.submit();
 }
 
 function handleAppearanceUploadSelection(file) {
