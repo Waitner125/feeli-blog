@@ -31,20 +31,24 @@ function isLinkActive(href: string) {
 <header class="site-header">
 	<nav class="site-nav" transition:persist>
 		<div class="site-nav-shell">
-			<a href="/" class="site-brand" aria-label={siteConfig.name}>
-				<span class="site-brand-mark" aria-hidden="true">
-					<img
-						src="https://assets.ericterminal.com/logo-transparent.png"
-						alt=""
-						loading="eager"
-						decoding="async"
-					/>
-				</span>
-				<span class="site-brand-copy">
-					<strong>{siteConfig.name}</strong>
-					<small>{siteAppearance.headerSubtitle}</small>
-				</span>
-			</a>
+			<div class="site-brand">
+				<a href="/api/auth/login" class="site-brand-mark-link" aria-label="进入后台登录">
+					<span class="site-brand-mark" aria-hidden="true">
+						<img
+							src="https://assets.ericterminal.com/logo-transparent.png"
+							alt=""
+							loading="eager"
+							decoding="async"
+						/>
+					</span>
+				</a>
+				<a href="/" class="site-brand-copy-link" aria-label={siteConfig.name}>
+					<span class="site-brand-copy">
+						<strong>{siteConfig.name}</strong>
+						<small>{siteAppearance.headerSubtitle}</small>
+					</span>
+				</a>
+			</div>
 			<ul class="nav-links">
 				{
 					navLinks.map((item) => (
@@ -141,6 +145,21 @@ function isLinkActive(href: string) {
 		gap: 0.85rem;
 		min-width: 0;
 		justify-self: start;
+	}
+
+	.site-brand-mark-link,
+	.site-brand-copy-link {
+		display: inline-flex;
+		min-width: 0;
+		color: inherit;
+	}
+
+	.site-brand-mark-link {
+		border-radius: var(--radius-inner);
+	}
+
+	.site-brand-copy-link {
+		display: grid;
 	}
 
 	.site-brand-mark {
