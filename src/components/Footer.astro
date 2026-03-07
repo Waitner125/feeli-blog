@@ -6,14 +6,11 @@ const year = new Date().getFullYear();
 
 <footer class="site-footer" data-footer-reveal>
 	<div class="container">
-		<div class="footer-inner glass-panel">
-			<div class="footer-copy">
-				<p class="footer-title">{siteConfig.name}</p>
-				<p class="footer-note">
-					把工程经验、调试记录和长期有效的判断慢慢沉淀下来。
-				</p>
+			<div class="footer-inner glass-panel">
+				<div class="footer-copy">
+					<p class="footer-title">{siteConfig.name}</p>
+				</div>
+				<p class="footer-meta">© {year} · {siteConfig.author}</p>
 			</div>
-			<p class="footer-meta">© {year} · {siteConfig.author}</p>
-		</div>
 	</div>
 </footer>
