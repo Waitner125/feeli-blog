@@ -169,7 +169,6 @@ export const adminSharedStyles = `
 		}
 
 		.sidebar-panel,
-		.admin-toolbar,
 		.table-card,
 		.stat-card,
 		.media-item,
@@ -186,7 +185,6 @@ export const adminSharedStyles = `
 		}
 
 		.sidebar-panel::before,
-		.admin-toolbar::before,
 		.table-card::before,
 		.stat-card::before,
 		.media-item::before,
@@ -296,30 +294,7 @@ export const adminSharedStyles = `
 		.main-content {
 			display: grid;
 			align-content: start;
-			gap: 1.25rem;
 			min-width: 0;
-		}
-
-		.admin-toolbar {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			gap: 1rem;
-			padding: 1rem 1.35rem;
-		}
-
-		.admin-toolbar-title {
-			font-size: 1.15rem;
-			font-weight: 700;
-			color: var(--text);
-		}
-
-		.admin-toolbar-actions {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 0.65rem;
-			align-items: center;
-			justify-content: flex-end;
 		}
 
 		.page-header,
@@ -891,7 +866,6 @@ export const adminSharedStyles = `
 			}
 
 			.sidebar-panel,
-			.admin-toolbar,
 			.editor-panel,
 			.table-card,
 			.stat-card,
@@ -904,11 +878,6 @@ export const adminSharedStyles = `
 				grid-template-columns: repeat(2, minmax(0, 1fr));
 			}
 
-			.admin-toolbar {
-				padding: 1rem 1.1rem;
-			}
-
-			.admin-toolbar-actions,
 			.page-actions,
 			.table-actions,
 			.form-actions,
@@ -995,12 +964,6 @@ ${adminSharedStyles}
 			</div>
 		</aside>
 		<main class="main-content">
-			<header class="admin-toolbar">
-				<div class="admin-toolbar-title">${escapeHtml(title)}</div>
-				<div class="admin-toolbar-actions">
-					<a href="/" target="_blank" rel="noopener noreferrer" class="btn btn-sm">打开前台</a>
-				</div>
-			</header>
 			<section class="admin-page-content">
 				${content}
 			</section>
