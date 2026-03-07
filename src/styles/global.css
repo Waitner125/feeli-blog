@@ -426,9 +426,19 @@ html[data-admin-preview="true"] .site-main {
 	position: absolute;
 	inset: 0;
 	border-radius: inherit;
-	background: rgba(255, 255, 255, var(--glass-panel-opacity, 0.14));
-	backdrop-filter: blur(var(--glass-panel-blur, 18px)) saturate(130%);
-	-webkit-backdrop-filter: blur(var(--glass-panel-blur, 18px)) saturate(130%);
+	--glass-panel-blur-effective: min(
+		calc(var(--glass-panel-blur, 18px) * 1.35),
+		72px
+	);
+	background: rgba(
+		255,
+		255,
+		255,
+		calc(var(--glass-panel-opacity, 0.14) * 0.82)
+	);
+	backdrop-filter: blur(var(--glass-panel-blur-effective)) saturate(145%);
+	-webkit-backdrop-filter: blur(var(--glass-panel-blur-effective))
+		saturate(145%);
 	pointer-events: none;
 	z-index: 0;
 }
@@ -740,8 +750,13 @@ html[data-admin-preview="true"] .site-main {
 	}
 
 	.glass-panel::after {
-		backdrop-filter: blur(var(--glass-panel-blur, 14px)) saturate(120%);
-		-webkit-backdrop-filter: blur(var(--glass-panel-blur, 14px)) saturate(120%);
+		--glass-panel-blur-effective: min(
+			calc(var(--glass-panel-blur, 14px) * 1.2),
+			44px
+		);
+		backdrop-filter: blur(var(--glass-panel-blur-effective)) saturate(132%);
+		-webkit-backdrop-filter: blur(var(--glass-panel-blur-effective))
+			saturate(132%);
 	}
 
 	.page-title {
