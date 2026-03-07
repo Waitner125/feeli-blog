@@ -104,4 +104,15 @@ describe("源码回归保护", () => {
 		);
 		assert.match(postCardSource, /object-position: center;/u);
 	});
+
+	test("友链页只保留申请入口卡片，申请表移到独立页面", async () => {
+		const [friendsSource, applyPageSource] = await Promise.all([
+			readFile("src/pages/friends.astro", "utf8"),
+			readFile("src/pages/friends/apply.astro", "utf8"),
+		]);
+
+		assert.ok(friendsSource.includes('href="/friends/apply"'));
+		assert.ok(!friendsSource.includes('action="/api/friend-links/apply"'));
+		assert.ok(applyPageSource.includes('action="/api/friend-links/apply"'));
+	});
 });

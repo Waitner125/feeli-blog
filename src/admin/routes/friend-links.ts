@@ -71,7 +71,7 @@ friendLinksRoutes.post("/apply", async (c) => {
 	const body = await c.req.parseBody();
 	const parsed = parseApplicationInput(body);
 	if ("error" in parsed) {
-		return c.redirect("/friends?apply=invalid");
+		return c.redirect("/friends/apply?apply=invalid");
 	}
 
 	const now = new Date().toISOString();
@@ -86,7 +86,7 @@ friendLinksRoutes.post("/apply", async (c) => {
 
 	if (existing) {
 		if (["pending", "approved", "offline"].includes(existing.status)) {
-			return c.redirect("/friends?apply=duplicate");
+			return c.redirect("/friends/apply?apply=duplicate");
 		}
 
 		await db
@@ -104,7 +104,7 @@ friendLinksRoutes.post("/apply", async (c) => {
 			})
 			.where(eq(friendLinks.id, existing.id));
 
-		return c.redirect("/friends?apply=success");
+		return c.redirect("/friends/apply?apply=success");
 	}
 
 	await db.insert(friendLinks).values({
@@ -119,7 +119,7 @@ friendLinksRoutes.post("/apply", async (c) => {
 		updatedAt: now,
 	});
 
-	return c.redirect("/friends?apply=success");
+	return c.redirect("/friends/apply?apply=success");
 });
 
 export { friendLinksRoutes };

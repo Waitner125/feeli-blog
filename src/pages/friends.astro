@@ -4,8 +4,6 @@ import { friendLinks } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
 
-const applyStatus = Astro.url.searchParams.get("apply") || "";
-
 let approvedLinks: Array<{
 	id: number;
 	name: string;
@@ -34,108 +32,64 @@ try {
 } catch {
 	// D1 未绑定时回退为空列表
 }
-
-function getApplyMessage(status: string) {
-	switch (status) {
-		case "success":
-			return {
-				type: "success",
-				text: "申请已提交，审核通过后会显示在友链列表。",
-			};
-		case "duplicate":
-			return {
-				type: "error",
-				text: "该站点已存在申请或已在友链列表中，请勿重复提交。",
-			};
-		case "invalid":
-			return {
-				type: "error",
-				text: "申请信息不完整或格式不合法，请检查后重试。",
-			};
-		default:
-			return null;
-	}
-}
-
-const applyMessage = getApplyMessage(applyStatus);
 ---
 
-<Base title="友链" description="展示已经通过审核的友情链接，并支持在线提交友链申请。">
+<Base title="友链" description="展示已经通过审核的友情链接。友链申请请从入口卡片进入独立页面。">
 	<section class="friends-hero glass-panel">
 		<span class="section-kicker">友情链接</span>
 		<h1 class="page-title">友链</h1>
-		<p class="page-intro">欢迎交换长期维护、可访问且内容合规的网站链接。你可以在下方直接提交申请。</p>
+		<p class="page-intro">这里展示已经通过审核的站点。申请入口放在列表下方，点击进入独立申请页填写资料。</p>
 	</section>
 
-	<section class="friends-grid">
-		<div class="friends-list glass-panel">
-			<div class="section-head">
-				<h2 class="section-heading">已通过友链</h2>
-				<p class="results-summary">共 {approvedLinks.length} 个站点</p>
-			</div>
+	<section class="friends-list glass-panel">
+		<div class="section-head">
+			<h2 class="section-heading">已通过友链</h2>
+			<p class="results-summary">共 {approvedLinks.length} 个站点</p>
+		</div>
 
-			{approvedLinks.length > 0 ? (
-				<ul class="friend-link-list">
-					{approvedLinks.map((item) => (
-						<li class="friend-link-item">
-							<div class="friend-link-meta">
-								<div class="friend-link-avatar" aria-hidden="true">
-									{item.avatarUrl ? <img src={item.avatarUrl} alt="" loading="lazy" decoding="async" /> : <span>{item.name.slice(0, 1)}</span>}
-								</div>
-								<div>
-									<a href={item.siteUrl} target="_blank" rel="noopener noreferrer" class="friend-link-name">{item.name}</a>
-									<p class="friend-link-desc">{item.description}</p>
-									<p class="friend-link-contact">联系方式：{item.contact}</p>
-								</div>
+		{approvedLinks.length > 0 ? (
+			<ul class="friend-link-list">
+				{approvedLinks.map((item) => (
+					<li class="friend-link-item">
+						<div class="friend-link-meta">
+							<div class="friend-link-avatar" aria-hidden="true">
+								{item.avatarUrl ? (
+									<img src={item.avatarUrl} alt="" loading="lazy" decoding="async" />
+								) : (
+									<span>{item.name.slice(0, 1)}</span>
+								)}
 							</div>
-						</li>
-					))}
-				</ul>
-			) : (
-				<div class="empty-state">
-					<p>当前还没有公开友链，欢迎提交第一条申请。</p>
-				</div>
-			)}
-		</div>
+							<div>
+								<a
+									href={item.siteUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="friend-link-name"
+								>
+									{item.name}
+								</a>
+								<p class="friend-link-desc">{item.description}</p>
+								<p class="friend-link-contact">联系方式：{item.contact}</p>
+							</div>
+						</div>
+					</li>
+				))}
+			</ul>
+		) : (
+			<div class="empty-state">
+				<p>当前还没有公开友链，欢迎申请第一条。</p>
+			</div>
+		)}
+	</section>
 
-		<div class="friends-apply glass-panel">
-			<h2 class="section-heading">提交友链申请</h2>
-			<p class="form-help">提交后默认进入待审核状态。请确保站点可访问，且已添加本站链接。</p>
-
-			{applyMessage ? (
-				<div class:list={["alert", applyMessage.type === "success" ? "alert-success" : "alert-error"]}>
-					{applyMessage.text}
-				</div>
-			) : null}
-
-			<form method="post" action="/api/friend-links/apply" class="friends-apply-form">
-				<label>
-					<span>站点名称</span>
-					<input type="text" name="name" maxlength="80" required />
-				</label>
-				<label>
-					<span>站点 URL</span>
-					<input type="url" name="siteUrl" maxlength="240" placeholder="https://example.com" required />
-				</label>
-				<label>
-					<span>头像 URL（可选）</span>
-					<input type="url" name="avatarUrl" maxlength="240" placeholder="https://example.com/avatar.png" />
-				</label>
-				<label>
-					<span>站点简介</span>
-					<textarea name="description" rows="3" maxlength="320" required></textarea>
-				</label>
-				<label>
-					<span>联系方式</span>
-					<input type="text" name="contact" maxlength="120" placeholder="邮箱 / 社媒账号" required />
-				</label>
-				<label>
-					<span>备注（可选）</span>
-					<textarea name="note" rows="2" maxlength="320"></textarea>
-				</label>
-				<button type="submit" class="button">提交申请</button>
-			</form>
-		</div>
+	<section class="friend-apply-entry glass-panel" aria-label="友链申请入口">
+		<a href="/friends/apply" class="friend-apply-link">
+			<span class="friend-apply-copy">
+				<strong>友链申请</strong>
+				<small>入口独立展示，点击进入后再填写站点信息，体验和评论区入口类似。</small>
+			</span>
+			<span class="friend-apply-icon" aria-hidden="true">+</span>
+		</a>
 	</section>
 </Base>
 
@@ -146,14 +100,8 @@ const applyMessage = getApplyMessage(applyStatus);
 		padding: clamp(1.5rem, 1rem + 2vw, 2.5rem);
 	}
 
-	.friends-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
-		gap: 1.2rem;
-	}
-
 	.friends-list,
-	.friends-apply {
+	.friend-apply-entry {
 		padding: 1.2rem;
 		display: grid;
 		gap: 1rem;
@@ -210,62 +158,56 @@ const applyMessage = getApplyMessage(applyStatus);
 		font-size: 0.88rem;
 	}
 
-	.friends-apply-form {
-		display: grid;
-		gap: 0.75rem;
-	}
-
-	.friends-apply-form label {
-		display: grid;
-		gap: 0.4rem;
-	}
-
-	.friends-apply-form span {
-		font-size: 0.87rem;
-		color: var(--color-text-muted);
-	}
-
-	.friends-apply-form input,
-	.friends-apply-form textarea {
+	.friend-apply-link {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-md);
 		width: 100%;
-		padding: 0.78rem 0.9rem;
+		padding: 1.05rem 1.2rem;
 		border-radius: var(--radius-inner);
-		border: 1px solid rgba(255, 255, 255, 0.14);
-		background: rgba(255, 255, 255, 0.06);
+		background: rgba(255, 255, 255, 0.08);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.friend-apply-copy {
+		display: grid;
+		gap: 0.2rem;
+	}
+
+	.friend-apply-copy strong {
+		font-size: 1rem;
 		color: var(--color-text);
 	}
 
-	.friends-apply-form textarea {
-		resize: vertical;
-	}
-
-	.form-help {
-		margin: 0;
+	.friend-apply-copy small {
 		font-size: 0.86rem;
 		color: var(--color-text-muted);
+		line-height: 1.65;
 	}
 
-	.alert {
-		padding: 0.75rem 0.85rem;
-		border-radius: var(--radius-inner);
-		font-size: 0.86rem;
+	.friend-apply-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.12);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		font-size: 1.2rem;
+		color: var(--color-accent-hover);
+		transition:
+			transform var(--transition),
+			background-color var(--transition),
+			border-color var(--transition);
 	}
 
-	.alert-success {
-		background: rgba(22, 163, 74, 0.14);
-		border: 1px solid rgba(22, 163, 74, 0.22);
-		color: #5be08b;
-	}
-
-	.alert-error {
-		background: rgba(239, 68, 68, 0.14);
-		border: 1px solid rgba(239, 68, 68, 0.22);
-		color: #ff8d8d;
-	}
-
-	@media (max-width: 960px) {
-		.friends-grid {
-			grid-template-columns: 1fr;
-		}
+	.friend-apply-link:hover .friend-apply-icon {
+		transform: rotate(90deg);
+		background: var(--color-accent-soft);
+		border-color: rgba(10, 132, 255, 0.16);
 	}
 </style>
