@@ -38,6 +38,12 @@ describe("安全工具", () => {
 		assert.match(html, /封面/u);
 	});
 
+	test("renderSafeMarkdown 会保留段内单换行", async () => {
+		const html = await renderSafeMarkdown("第一行\n第二行\n第三行");
+
+		assert.match(html, /<p>第一行<br>第二行<br>第三行<\/p>/u);
+	});
+
 	test("verifyPassword 支持新的 PBKDF2 哈希", async () => {
 		const password = "correct-horse-battery-staple";
 		const hash = await hashPassword(password);

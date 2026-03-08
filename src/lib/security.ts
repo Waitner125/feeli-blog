@@ -237,6 +237,7 @@ export async function renderSafeMarkdown(markdown: string): Promise<string> {
 
 	const rendered = marked.parse(markdown, {
 		gfm: true,
+		breaks: true,
 		renderer,
 	});
 
