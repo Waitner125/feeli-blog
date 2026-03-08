@@ -125,6 +125,12 @@ npm run hash:password -- 你的密码
 3. 如果要启用媒体管理，确认 `MEDIA_BUCKET` 已绑定。
 4. 上线前执行 `npm run check` 和 `npm test`。
 
+## 上线后维护速查
+
+- 只改 UI/交互/接口逻辑（不改 D1 表结构）时，直接 `push` 即可触发自动部署。
+- 改了数据库结构（新增表/字段/索引）时，部署后必须执行 `npm run db:migrate:remote`。
+- 完整维护流程与故障排查请查看：[docs/maintenance-guide.md](docs/maintenance-guide.md)。
+
 ## 许可证
 
 项目使用 [MIT](LICENSE) 许可证。
