@@ -101,4 +101,26 @@ describe("后台接口", () => {
 		assert.equal(res.status, 503);
 		assert.match(await res.text(), /尚未完成 GitHub OAuth 配置/u);
 	});
+
+	test("GET /auth/github 在触发限流锁定时返回 429", async () => {
+		const lockedUntil = new Date(Date.now() + 60 * 1000).toISOString();
+		const res = await app.request("/auth/github", undefined, {
+			...mockEnv,
+			SESSION: {
+				get: async (key: string) =>
+					key === "login-rate:unknown"
+						? JSON.stringify({
+								attempts: 5,
+								lockedUntil,
+								lastAttempt: new Date().toISOString(),
+							})
+						: null,
+				put: async () => undefined,
+				delete: async () => undefined,
+			},
+		} as unknown as Env);
+
+		assert.equal(res.status, 429);
+		assert.match(await res.text(), /登录尝试过多/u);
+	});
 });

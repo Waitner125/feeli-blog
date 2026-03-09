@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { timingSafeEqualText } from "@/lib/password";
 import { sanitizePlainText } from "@/lib/security";
@@ -13,6 +13,11 @@ import {
 	getSessionCookieOptions,
 	requireAuth,
 } from "../middleware/auth";
+import {
+	clearAttempts,
+	rateLimit,
+	recordFailedAttempt,
+} from "../middleware/rate-limit";
 import { loginPage } from "../views/login";
 
 const auth = new Hono<AdminAppEnv>();
@@ -36,6 +41,26 @@ interface GitHubAccessTokenResponse {
 interface GitHubUserProfile {
 	login?: string;
 	id?: number;
+}
+
+function getClientIp(c: Context<AdminAppEnv>): string {
+	return c.req.header("cf-connecting-ip") || "unknown";
+}
+
+async function recordOAuthFailure(c: Context<AdminAppEnv>) {
+	try {
+		await recordFailedAttempt(c.env, getClientIp(c));
+	} catch {
+		// 限流写入失败时不阻断 OAuth 回调流程，避免误伤合法登录
+	}
+}
+
+async function clearOAuthFailures(c: Context<AdminAppEnv>) {
+	try {
+		await clearAttempts(c.env, getClientIp(c));
+	} catch {
+		// 限流清理失败时忽略，避免影响登录成功后的跳转
+	}
 }
 
 function getAdminGitHubLogin(env: Env): string | undefined {
@@ -176,6 +201,8 @@ auth.get("/login", (c) => {
 });
 
 auth.post("/login", (c) => c.text("当前后台仅支持 GitHub OAuth 登录", 405));
+auth.use("/github", rateLimit);
+auth.use("/github/callback", rateLimit);
 
 auth.get("/github", async (c) => {
 	const config = getGitHubOAuthConfig(c.env);
@@ -236,6 +263,7 @@ auth.get("/github/callback", async (c) => {
 	}
 
 	if (oauthError) {
+		await recordOAuthFailure(c);
 		return c.html(
 			loginPage({
 				error: "GitHub 授权被取消或未完成",
@@ -253,6 +281,7 @@ auth.get("/github/callback", async (c) => {
 		!storedVerifier ||
 		!timingSafeEqualText(state, storedState)
 	) {
+		await recordOAuthFailure(c);
 		return c.html(
 			loginPage({
 				error: "GitHub OAuth 状态校验失败",
@@ -271,6 +300,7 @@ auth.get("/github/callback", async (c) => {
 	);
 
 	if (!accessToken) {
+		await recordOAuthFailure(c);
 		return c.html(
 			loginPage({
 				error: "GitHub 访问令牌交换失败",
@@ -284,6 +314,7 @@ auth.get("/github/callback", async (c) => {
 	const profile = await fetchGitHubUserProfile(accessToken);
 
 	if (!profile?.login) {
+		await recordOAuthFailure(c);
 		return c.html(
 			loginPage({
 				error: "无法获取 GitHub 账号信息",
@@ -295,6 +326,7 @@ auth.get("/github/callback", async (c) => {
 	}
 
 	if (!timingSafeEqualText(profile.login, config.adminLogin)) {
+		await recordOAuthFailure(c);
 		return c.html(
 			loginPage({
 				error: `当前 GitHub 账号 ${profile.login} 没有后台权限，这个是我的 CMS，请回吧～ 项目实现在 https://github.com/Eric-Terminal/cf-astro-blog-starter ，用 Cloudflare CI 构建，拿回去改改自己也能用。`,
@@ -310,6 +342,7 @@ auth.get("/github/callback", async (c) => {
 	setCookie(c, "admin_session", token, {
 		...getSessionCookieOptions(c.req.url),
 	});
+	await clearOAuthFailures(c);
 
 	return c.redirect("/api/admin");
 });

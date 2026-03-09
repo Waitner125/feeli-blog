@@ -20,6 +20,9 @@ describe("GitHub OAuth 后台认证保护", () => {
 		assert.match(authRouteSource, /code_challenge/u);
 		assert.match(authRouteSource, /https:\/\/api\.github\.com\/user/u);
 		assert.match(authRouteSource, /仅支持 GitHub OAuth 登录/u);
+		assert.match(authRouteSource, /rateLimit/u);
+		assert.match(authRouteSource, /recordFailedAttempt/u);
+		assert.match(authRouteSource, /clearAttempts/u);
 	});
 
 	test("会话中间件会以 GitHub 用户名作为后台身份", async () => {

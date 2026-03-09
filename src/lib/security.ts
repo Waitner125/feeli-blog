@@ -1,6 +1,7 @@
 import { marked, type Tokens } from "marked";
 
 const POST_STATUS_VALUES = ["draft", "published", "scheduled"] as const;
+const SAFE_HTTP_URL_PROTOCOLS = new Set(["http:", "https:"]);
 const SAFE_URL_PROTOCOLS = new Set(["http:", "https:", "mailto:"]);
 
 export type PostStatus = (typeof POST_STATUS_VALUES)[number];
@@ -108,7 +109,7 @@ export function sanitizeCanonicalUrl(value: unknown): string | null {
 
 	try {
 		const url = new URL(normalized);
-		return SAFE_URL_PROTOCOLS.has(url.protocol) ? url.toString() : null;
+		return SAFE_HTTP_URL_PROTOCOLS.has(url.protocol) ? url.toString() : null;
 	} catch {
 		return null;
 	}

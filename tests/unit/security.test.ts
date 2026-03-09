@@ -10,6 +10,7 @@ import {
 	buildUrlSlug,
 	renderSafeMarkdown,
 	renderSafeMarkdownWithToc,
+	sanitizeCanonicalUrl,
 } from "../../src/lib/security";
 
 describe("安全工具", () => {
@@ -150,5 +151,14 @@ describe("安全工具", () => {
 	test("buildUrlSlug 支持长度限制", () => {
 		const slug = buildUrlSlug("a".repeat(140), { maxLength: 24 });
 		assert.equal(slug.length, 24);
+	});
+
+	test("sanitizeCanonicalUrl 仅允许 http 与 https 协议", () => {
+		assert.equal(
+			sanitizeCanonicalUrl("https://example.com/path?x=1"),
+			"https://example.com/path?x=1",
+		);
+		assert.equal(sanitizeCanonicalUrl("mailto:admin@example.com"), null);
+		assert.equal(sanitizeCanonicalUrl("javascript:alert(1)"), null);
 	});
 });
