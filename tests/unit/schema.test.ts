@@ -73,6 +73,7 @@ describe("数据库结构", () => {
 	test("analyticsSessions 表包含必要字段", () => {
 		const columns = Object.keys(analyticsSessions);
 		assert.ok(columns.includes("sessionId"));
+		assert.ok(columns.includes("ipAddress"));
 		assert.ok(columns.includes("ipHash"));
 		assert.ok(columns.includes("country"));
 		assert.ok(columns.includes("browser"));

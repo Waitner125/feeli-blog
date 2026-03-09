@@ -21,6 +21,13 @@ analytics.get("/", async (c) => {
 		totalPageViews: 0,
 		topPages: [] as Array<{ pageUrl: string; views: number }>,
 		topReferrers: [] as Array<{ referrer: string; count: number }>,
+		recentSessions: [] as Array<{
+			ipAddress: string | null;
+			browser: string | null;
+			deviceType: string | null;
+			landingPage: string | null;
+			lastSeenAt: string;
+		}>,
 		recentEvents: [] as Array<{
 			eventType: string;
 			pageUrl: string | null;
@@ -72,6 +79,18 @@ analytics.get("/", async (c) => {
 			.from(analyticsEvents)
 			.orderBy(desc(analyticsEvents.timestamp))
 			.limit(20);
+
+		stats.recentSessions = await db
+			.select({
+				ipAddress: analyticsSessions.ipAddress,
+				browser: analyticsSessions.browser,
+				deviceType: analyticsSessions.deviceType,
+				landingPage: analyticsSessions.landingPage,
+				lastSeenAt: analyticsSessions.lastSeenAt,
+			})
+			.from(analyticsSessions)
+			.orderBy(desc(analyticsSessions.lastSeenAt))
+			.limit(20);
 	} catch {
 		// D1 未绑定时回退为空统计
 	}
@@ -112,6 +131,23 @@ analytics.get("/", async (c) => {
 				</tbody>
 			</table></div>`
 				: "<p class='empty-state'>当前还没有来源统计数据。</p>"
+		}
+
+		<h2>最近会话（审计）</h2>
+		${
+			stats.recentSessions.length > 0
+				? `<div class="table-card"><table class="data-table">
+				<thead><tr><th>IP</th><th>浏览器/设备</th><th>落地页</th><th>最后访问</th></tr></thead>
+				<tbody>
+					${stats.recentSessions
+						.map(
+							(s) =>
+								`<tr><td>${escapeHtml(s.ipAddress || "-")}</td><td>${escapeHtml(`${s.browser || "Unknown"} / ${s.deviceType || "Unknown"}`)}</td><td>${escapeHtml(s.landingPage || "-")}</td><td>${escapeHtml(s.lastSeenAt)}</td></tr>`,
+						)
+						.join("")}
+				</tbody>
+			</table></div>`
+				: "<p class='empty-state'>当前还没有会话审计数据。</p>"
 		}
 
 		<h2>最近事件</h2>

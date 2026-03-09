@@ -169,6 +169,7 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 export const analyticsSessions = sqliteTable("analytics_sessions", {
 	id: integer("id").primaryKey({ autoIncrement: true }),
 	sessionId: text("session_id").notNull().unique(),
+	ipAddress: text("ip_address"),
 	ipHash: text("ip_hash"),
 	country: text("country"),
 	region: text("region"),

@@ -70,6 +70,7 @@ describe("后台接口", () => {
 				headers: {
 					"content-type": "application/json",
 					origin: "http://localhost",
+					"CF-Connecting-IP": "203.0.113.10",
 				},
 				body: JSON.stringify({
 					sessionId: "sid_test_1234567890abcd",
@@ -92,6 +93,7 @@ describe("后台接口", () => {
 		assert.equal(calls.length, 2);
 		assert.match(calls[0]?.sql ?? "", /insert into analytics_sessions/iu);
 		assert.match(calls[1]?.sql ?? "", /insert into analytics_events/iu);
+		assert.equal(calls[0]?.params[1], "203.0.113.10");
 	});
 
 	test("POST /analytics/track 会拒绝无效事件数据", async () => {

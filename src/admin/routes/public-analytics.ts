@@ -145,24 +145,22 @@ function parseOs(userAgent: string): string {
 	return "Other";
 }
 
-async function hashIp(ip: string | null): Promise<string | null> {
-	if (!ip) {
+function parseClientIp(c: Context<AdminAppEnv>): string | null {
+	const cfIp = sanitizePlainText(c.req.header("CF-Connecting-IP"), 64);
+	if (cfIp) {
+		return cfIp;
+	}
+
+	const xForwardedFor = sanitizePlainText(c.req.header("x-forwarded-for"), 255);
+	if (!xForwardedFor) {
 		return null;
 	}
 
-	const normalized = ip.trim();
-	if (!normalized) {
-		return null;
-	}
-
-	const digest = await crypto.subtle.digest(
-		"SHA-256",
-		new TextEncoder().encode(normalized),
-	);
-	const hash = Array.from(new Uint8Array(digest))
-		.map((byte) => byte.toString(16).padStart(2, "0"))
-		.join("");
-	return hash.slice(0, 32);
+	const first = xForwardedFor
+		.split(",")
+		.map((item) => item.trim())
+		.filter(Boolean)[0];
+	return sanitizePlainText(first, 64) || null;
 }
 
 function isSameOriginRequest(c: Context<AdminAppEnv>) {
@@ -183,7 +181,7 @@ function isSameOriginRequest(c: Context<AdminAppEnv>) {
 const UPSERT_SESSION_SQL = `
 INSERT INTO analytics_sessions (
 	session_id,
-	ip_hash,
+	ip_address,
 	country,
 	region,
 	city,
@@ -200,7 +198,7 @@ INSERT INTO analytics_sessions (
 	last_seen_at
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
 ON CONFLICT(session_id) DO UPDATE SET
-	ip_hash = excluded.ip_hash,
+	ip_address = excluded.ip_address,
 	country = excluded.country,
 	region = excluded.region,
 	city = excluded.city,
@@ -256,14 +254,14 @@ publicAnalyticsRoutes.post("/track", async (c) => {
 	const browser = parseBrowser(userAgent);
 	const os = parseOs(userAgent);
 	const deviceType = parseDeviceType(userAgent);
-	const ipHash = await hashIp(c.req.header("CF-Connecting-IP") || null);
+	const ipAddress = parseClientIp(c);
 
 	try {
 		if (payload.touchSession) {
 			await c.env.DB.prepare(UPSERT_SESSION_SQL)
 				.bind(
 					payload.sessionId,
-					ipHash,
+					ipAddress,
 					country,
 					region,
 					city,
