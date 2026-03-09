@@ -943,7 +943,7 @@ appearance.post("/background/upload", async (c) => {
 		return c.html(
 			renderAppearanceErrorPage(
 				session.csrfToken,
-				"背景图单个文件不能超过 5 MB ",
+				"背景图单个文件不能超过 50 MB ",
 			),
 			400,
 		);

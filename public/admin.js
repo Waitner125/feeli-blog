@@ -48,7 +48,7 @@ function updateMediaUploadFilename(file) {
 
 	if (!(file instanceof File)) {
 		mediaUploadFilename.textContent =
-			"支持 JPG、PNG、WEBP、AVIF、GIF，单个文件不超过 5 MB";
+			"支持 JPG、PNG、WEBP、AVIF、GIF，单个文件不超过 50 MB";
 		return;
 	}
 

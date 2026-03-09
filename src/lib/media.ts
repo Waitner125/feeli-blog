@@ -9,7 +9,7 @@ const ALLOWED_MEDIA_TYPES = new Map<string, string>([
 const MEDIA_HASH_INDEX_PREFIX = "__index/media-hash/v1";
 const CONTENT_HASH_PATTERN = /^[a-f0-9]{64}$/u;
 
-export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 interface MediaHashIndexRecord {
 	contentHash: string;

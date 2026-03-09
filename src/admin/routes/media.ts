@@ -47,7 +47,7 @@ function validateUploadFile(file: File): string | null {
 	}
 
 	if (file.size > MAX_UPLOAD_BYTES) {
-		return "单个文件不能超过 5 MB ";
+		return "单个文件不能超过 50 MB ";
 	}
 
 	return null;
@@ -143,7 +143,7 @@ media.get("/", async (c) => {
 			>
 				<span class="media-upload-copy">
 					<strong>拖拽图片到这里，或点击选择文件</strong>
-					<span data-media-upload-filename="true">支持 JPG、PNG、WEBP、AVIF、GIF，单个文件不超过 5 MB</span>
+					<span data-media-upload-filename="true">支持 JPG、PNG、WEBP、AVIF、GIF，单个文件不超过 50 MB</span>
 				</span>
 			</label>
 			<div class="media-upload-actions">
