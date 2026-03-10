@@ -102,6 +102,9 @@ describe("源码回归保护", () => {
 				"backdrop-filter: blur(var(--post-card-cover-blur-effective))",
 			),
 		);
+		assert.ok(!postCardSource.includes("post-card-cover-fallback"));
+		assert.match(postCardSource, /post-card-no-cover/u);
+		assert.match(postCardSource, /\{hasCover && \(/u);
 		assert.match(postCardSource, /object-position: center;/u);
 	});
 
