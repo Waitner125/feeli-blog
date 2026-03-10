@@ -23,6 +23,8 @@ describe("数据库结构", () => {
 		assert.ok(columns.includes("excerpt"));
 		assert.ok(columns.includes("publishedAt"));
 		assert.ok(columns.includes("featuredImageKey"));
+		assert.ok(columns.includes("isPinned"));
+		assert.ok(columns.includes("pinnedOrder"));
 		assert.ok(columns.includes("metaTitle"));
 		assert.ok(columns.includes("metaDescription"));
 		assert.ok(columns.includes("categoryId"));

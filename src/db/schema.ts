@@ -46,6 +46,10 @@ export const blogPosts = sqliteTable(
 		publishedAt: text("published_at"),
 		featuredImageKey: text("featured_image_key"),
 		featuredImageAlt: text("featured_image_alt"),
+		isPinned: integer("is_pinned", { mode: "boolean" })
+			.notNull()
+			.default(false),
+		pinnedOrder: integer("pinned_order").notNull().default(100),
 		metaTitle: text("meta_title"),
 		metaDescription: text("meta_description"),
 		metaKeywords: text("meta_keywords"),
@@ -59,6 +63,11 @@ export const blogPosts = sqliteTable(
 	(table) => [
 		index("posts_slug_idx").on(table.slug),
 		index("posts_status_publish_idx").on(table.status, table.publishAt),
+		index("posts_pinned_order_idx").on(
+			table.isPinned,
+			table.pinnedOrder,
+			table.publishedAt,
+		),
 	],
 );
 

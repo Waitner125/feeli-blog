@@ -1,5 +1,5 @@
 ---
-import { desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import PostCard from "@/components/PostCard.astro";
 import { blogCategories, blogPosts } from "@/db/schema";
 import Base from "@/layouts/Base.astro";
@@ -13,7 +13,7 @@ import {
 } from "@/lib/site-appearance";
 import { siteConfig } from "@/lib/types";
 
-let recentPosts: Array<{
+interface HomePostCardRow {
 	title: string;
 	slug: string;
 	excerpt: string | null;
@@ -22,13 +22,40 @@ let recentPosts: Array<{
 	categoryName: string | null;
 	featuredImageKey: string | null;
 	featuredImageAlt: string | null;
-}> = [];
+}
+
+let pinnedPosts: HomePostCardRow[] = [];
+let recentPosts: HomePostCardRow[] = [];
 let homepageAppearance = DEFAULT_SITE_APPEARANCE;
 
 try {
 	const { env } = Astro.locals.runtime;
 	const db = getDb(env.DB);
 	homepageAppearance = await getSiteAppearance(db);
+
+	pinnedPosts = await db
+		.select({
+			title: blogPosts.title,
+			slug: blogPosts.slug,
+			excerpt: blogPosts.excerpt,
+			publishedAt: blogPosts.publishedAt,
+			authorName: blogPosts.authorName,
+			categoryName: blogCategories.name,
+			featuredImageKey: blogPosts.featuredImageKey,
+			featuredImageAlt: blogPosts.featuredImageAlt,
+		})
+		.from(blogPosts)
+		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
+		.where(
+			and(getPublicPostVisibilityCondition(), eq(blogPosts.isPinned, true)),
+		)
+		.orderBy(
+			asc(blogPosts.pinnedOrder),
+			desc(blogPosts.publishedAt),
+			desc(blogPosts.createdAt),
+		)
+		.limit(6);
+
 	recentPosts = await db
 		.select({
 			title: blogPosts.title,
@@ -42,16 +69,29 @@ try {
 		})
 		.from(blogPosts)
 		.leftJoin(blogCategories, eq(blogPosts.categoryId, blogCategories.id))
-		.where(getPublicPostVisibilityCondition())
-		.orderBy(desc(blogPosts.publishedAt))
+		.where(
+			and(getPublicPostVisibilityCondition(), eq(blogPosts.isPinned, false)),
+		)
+		.orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
 		.limit(6);
 } catch {
 	// D1 未绑定时首页退化为空列表
 }
 
-const latestUpdate = recentPosts[0]?.publishedAt
-	? formatDate(recentPosts[0].publishedAt)
+const latestPost = [...pinnedPosts, ...recentPosts]
+	.filter((post) => Boolean(post.publishedAt))
+	.sort(
+		(a, b) =>
+			new Date(b.publishedAt ?? 0).getTime() -
+			new Date(a.publishedAt ?? 0).getTime(),
+	)[0];
+const latestUpdate = latestPost?.publishedAt
+	? formatDate(latestPost.publishedAt)
 	: "等待第一篇正式发布的文章";
+const recentSectionSubheading =
+	pinnedPosts.length > 0
+		? "置顶文章固定展示在上方，本区仅显示非置顶的最近发布内容。"
+		: "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
 
 function isInternalHref(href: string) {
@@ -160,11 +200,43 @@ function isInternalHref(href: string) {
 
 	<section class="section-head">
 		<div>
+			<span class="section-kicker">置顶文章</span>
+			<h2 class="section-heading">置顶文章</h2>
+		</div>
+		<p class="section-subheading">
+			可在后台编辑文章时勾选“首页置顶”，并用顺序值控制展示先后。
+		</p>
+	</section>
+
+	{pinnedPosts.length > 0 ? (
+		<div class="home-grid home-grid-pinned">
+			{pinnedPosts.map((post, index) => (
+				<PostCard
+					title={post.title}
+					slug={post.slug}
+					excerpt={post.excerpt}
+					publishedAt={post.publishedAt}
+					authorName={post.authorName}
+					categoryName={post.categoryName}
+					featuredImageKey={post.featuredImageKey}
+					featuredImageAlt={post.featuredImageAlt}
+					coverSide={index % 2 === 0 ? "left" : "right"}
+				/>
+			))}
+		</div>
+	) : (
+		<div class="empty-state glass-panel">
+			<p>当前还没有置顶文章，去后台编辑文章即可设置。</p>
+		</div>
+	)}
+
+	<section class="section-head">
+		<div>
 			<span class="section-kicker">最近更新</span>
 			<h2 class="section-heading">最近更新</h2>
 		</div>
 		<p class="section-subheading">
-			保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。
+			{recentSectionSubheading}
 		</p>
 	</section>
 

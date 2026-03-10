@@ -19,6 +19,15 @@ describe("首页灵动交互保护", () => {
 		assert.match(homePageSource, /hero-aura-primary/u);
 	});
 
+	test("首页会单独渲染置顶文章板块并将最近更新与置顶分离", async () => {
+		const homePageSource = await readFile("src/pages/index.astro", "utf8");
+
+		assert.match(homePageSource, /置顶文章/u);
+		assert.match(homePageSource, /eq\(blogPosts\.isPinned, true\)/u);
+		assert.match(homePageSource, /eq\(blogPosts\.isPinned, false\)/u);
+		assert.match(homePageSource, /recentSectionSubheading/u);
+	});
+
 	test("右侧信息卡毛玻璃会跟随主题在深浅底之间切换", async () => {
 		const homePageSource = await readFile("src/pages/index.astro", "utf8");
 

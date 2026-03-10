@@ -54,6 +54,11 @@ export function postEditorPage(data: EditorData): string {
 	const featuredImageKey = post?.featuredImageKey || "";
 	const featuredImageAlt = post?.featuredImageAlt || "";
 	const featuredImageUrl = featuredImageKey ? `/media/${featuredImageKey}` : "";
+	const isPinned = Boolean(post?.isPinned);
+	const pinnedOrderValue =
+		typeof post?.pinnedOrder === "number" && post.pinnedOrder > 0
+			? String(post.pinnedOrder)
+			: "100";
 	const publishAtValue = toDateTimeLocalValue(post?.publishAt || null);
 	const isScheduled = currentStatus === "scheduled";
 
@@ -138,6 +143,34 @@ export function postEditorPage(data: EditorData): string {
 							${isScheduled ? "" : "disabled"}
 							${isScheduled ? "required" : ""}
 						/>
+					</div>
+
+					<div class="form-group">
+						<label for="isPinned">
+							<input
+								type="checkbox"
+								id="isPinned"
+								name="isPinned"
+								value="1"
+								${isPinned ? "checked" : ""}
+							/>
+							首页置顶文章
+						</label>
+						<p class="form-help">勾选后会在首页“置顶文章”板块固定展示。</p>
+					</div>
+
+					<div class="form-group">
+						<label for="pinnedOrder">置顶顺序</label>
+						<input
+							type="number"
+							id="pinnedOrder"
+							name="pinnedOrder"
+							class="form-input"
+							value="${escapeAttribute(pinnedOrderValue)}"
+							min="1"
+							max="9999"
+						/>
+						<p class="form-help">数值越小越靠前；未勾选置顶时此值会自动忽略。</p>
 					</div>
 
 					<div class="form-group">

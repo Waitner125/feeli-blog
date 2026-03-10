@@ -85,6 +85,19 @@ describe("后台界面风格保护", () => {
 		);
 	});
 
+	test("文章编辑页支持首页置顶开关与置顶顺序输入", async () => {
+		const [editorSource, listSource] = await Promise.all([
+			readFile("src/admin/views/posts/editor.ts", "utf8"),
+			readFile("src/admin/views/posts/list.ts", "utf8"),
+		]);
+
+		assert.match(editorSource, /name="isPinned"/u);
+		assert.match(editorSource, /name="pinnedOrder"/u);
+		assert.match(editorSource, /首页置顶文章/u);
+		assert.match(listSource, /置顶/u);
+		assert.match(listSource, /置顶 #/u);
+	});
+
 	test("文章编辑页提供 Markdown 实时预览区域", async () => {
 		const [editorSource, adminScriptSource, layoutSource] = await Promise.all([
 			readFile("src/admin/views/posts/editor.ts", "utf8"),

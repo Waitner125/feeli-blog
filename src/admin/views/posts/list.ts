@@ -12,6 +12,8 @@ interface PostRow {
 	title: string;
 	slug: string;
 	status: string;
+	isPinned: boolean;
+	pinnedOrder: number;
 	publishedAt: string | null;
 	viewCount: number | null;
 	createdAt: string;
@@ -105,6 +107,7 @@ export function postsListPage(
 						<th>标题</th>
 						<th>分类</th>
 						<th>状态</th>
+						<th>置顶</th>
 						<th>浏览量</th>
 						<th>日期</th>
 						<th>操作</th>
@@ -115,9 +118,12 @@ export function postsListPage(
 							.map(
 								(post) => `
 					<tr>
-						<td><a href="/api/admin/posts/${post.id}/edit">${escapeHtml(post.title)}</a></td>
+						<td>
+							<a href="/api/admin/posts/${post.id}/edit">${escapeHtml(post.title)}</a>
+						</td>
 						<td>${escapeHtml(post.categoryName || "-")}</td>
 						<td><span class="badge badge-${normalizeDisplayStatus(post.status)}">${escapeHtml(getPostStatusLabel(post.status))}</span></td>
+						<td>${post.isPinned ? `置顶 #${post.pinnedOrder}` : "-"}</td>
 						<td>${post.viewCount ?? 0}</td>
 						<td>${post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : new Date(post.createdAt).toLocaleDateString()}</td>
 						<td class="table-actions">
