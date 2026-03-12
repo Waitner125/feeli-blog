@@ -30,22 +30,37 @@ function formatDate(value) {
 
 function createResultCard(post) {
 	const formattedDate = formatDate(post.publishedAt);
-	const tagNames = Array.isArray(post.tagNames) ? post.tagNames : [];
+	const coverImageUrl = post.featuredImageKey
+		? `/media/${post.featuredImageKey}`
+		: "";
+	const coverImageAlt = post.featuredImageAlt?.trim() || `${post.title} 的封面图`;
+	const hasCover = Boolean(coverImageUrl);
+	const cardClassName = [
+		"post-card",
+		"glass-panel",
+		hasCover ? "post-card-cover-left" : "post-card-no-cover",
+	].join(" ");
 
-	return `<article class="search-result-card glass-panel">
-	<div class="search-result-card-inner">
-		<div class="search-result-pill-row">
-			${formattedDate ? `<span class="search-result-pill">${escapeHtml(formattedDate)}</span>` : ""}
-			${post.categoryName ? `<span class="search-result-pill">${escapeHtml(post.categoryName)}</span>` : ""}
+	return `<article class="${cardClassName}">
+	${hasCover
+		? `<a href="${escapeHtml(post.url)}" class="post-card-cover">
+		<img src="${escapeHtml(coverImageUrl)}" alt="${escapeHtml(coverImageAlt)}" loading="lazy" decoding="async" />
+	</a>`
+		: ""}
+	<div class="post-card-content">
+		<div class="post-card-top">
+			<div class="pill-row">
+				${formattedDate ? `<time class="pill" datetime="${escapeHtml(post.publishedAt || "")}">${escapeHtml(formattedDate)}</time>` : ""}
+				${post.categoryName ? `<span class="pill">${escapeHtml(post.categoryName)}</span>` : ""}
+			</div>
+			<a href="${escapeHtml(post.url)}" class="post-card-link">
+				<h3 class="post-card-title">${escapeHtml(post.title)}</h3>
+			</a>
 		</div>
-		<a href="${escapeHtml(post.url)}" class="search-result-link">
-			<h3 class="search-result-title">${escapeHtml(post.title)}</h3>
-		</a>
-		<p class="search-result-excerpt">${escapeHtml(post.excerpt || "")}</p>
-		<div class="search-result-meta">
+		${post.excerpt ? `<p class="post-card-excerpt">${escapeHtml(post.excerpt)}</p>` : ""}
+		<div class="post-card-meta">
 			<span>${escapeHtml(post.authorName || "本站作者")}</span>
-			<span>${escapeHtml(tagNames.slice(0, 3).join(" · "))}</span>
-			<a href="${escapeHtml(post.url)}" class="search-result-readmore">继续阅读</a>
+			<a href="${escapeHtml(post.url)}" class="post-card-readmore">继续阅读</a>
 		</div>
 	</div>
 </article>`;
