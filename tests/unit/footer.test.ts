@@ -11,6 +11,9 @@ describe("页脚精简保护", () => {
 		assert.ok(!footerSource.includes('href="/search"'));
 		assert.ok(!footerSource.includes('href="/sitemap.xml"'));
 		assert.match(footerSource, /footer-meta/u);
+		assert.match(footerSource, /icp\.gov\.moe\/\?keyword=20260256/u);
+		assert.match(footerSource, /萌ICP备20260256号/u);
+		assert.match(footerSource, /target="_blank"/u);
 	});
 
 	test("页脚会在接近页面底部时缓慢上浮出现", async () => {
