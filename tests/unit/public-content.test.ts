@@ -171,6 +171,22 @@ describe("源码回归保护", () => {
 		assert.ok(postPageSource.includes("toc={toc}"));
 	});
 
+	test("文章代码块启用 Mac 终端样式增强与复制按钮脚本", async () => {
+		const [baseLayoutSource, scriptSource, globalStyleSource] =
+			await Promise.all([
+				readFile("src/layouts/Base.astro", "utf8"),
+				readFile("public/code-block-enhance.js", "utf8"),
+				readFile("src/styles/global.css", "utf8"),
+			]);
+
+		assert.ok(baseLayoutSource.includes("/code-block-enhance.js"));
+		assert.ok(scriptSource.includes("code-lang-chip"));
+		assert.ok(scriptSource.includes("code-copy-btn"));
+		assert.ok(scriptSource.includes("language-"));
+		assert.ok(globalStyleSource.includes(".prose pre .code-lang-chip"));
+		assert.ok(globalStyleSource.includes(".prose pre .code-copy-btn"));
+	});
+
 	test("后台文章变更会触发可选部署钩子", async () => {
 		const [postRouteSource, deployHookSource, workflowSource] =
 			await Promise.all([
