@@ -6,6 +6,8 @@ import {
 import { type PostStatus, sanitizePlainText } from "@/lib/security";
 
 const MAX_CONTENT_CHARS = 12_000;
+const SEO_COMPLETION_MAX_TOKENS = 1_200;
+const ERROR_RESPONSE_SNIPPET_LENGTH = 480;
 
 interface GeneratedSeoPayload {
 	excerpt?: unknown;
@@ -63,18 +65,98 @@ function compactMarkdownForPrompt(value: string) {
 }
 
 function extractJsonObject(content: string): Record<string, unknown> | null {
+	function parseJsonObject(value: string): Record<string, unknown> | null {
+		try {
+			const parsed = JSON.parse(value);
+			return parsed && typeof parsed === "object"
+				? (parsed as Record<string, unknown>)
+				: null;
+		} catch {
+			return null;
+		}
+	}
+
+	function repairMalformedJson(value: string): string {
+		let result = "";
+		let inString = false;
+		let escaped = false;
+
+		for (const char of value) {
+			if (!inString) {
+				if (char === '"') {
+					inString = true;
+				}
+				result += char;
+				continue;
+			}
+
+			if (escaped) {
+				result += char;
+				escaped = false;
+				continue;
+			}
+
+			if (char === "\\") {
+				result += char;
+				escaped = true;
+				continue;
+			}
+
+			if (char === '"') {
+				inString = false;
+				result += char;
+				continue;
+			}
+
+			// 部分模型会直接输出原始换行或制表符，导致 JSON 非法，这里做最小修复。
+			if (char === "\n") {
+				result += "\\n";
+				continue;
+			}
+			if (char === "\r") {
+				continue;
+			}
+			if (char === "\t") {
+				result += "\\t";
+				continue;
+			}
+
+			result += char;
+		}
+
+		return result;
+	}
+
+	function parseJsonObjectWithRepair(
+		value: string,
+	): Record<string, unknown> | null {
+		const direct = parseJsonObject(value);
+		if (direct) {
+			return direct;
+		}
+
+		const repaired = repairMalformedJson(value);
+		const repairedParsed = parseJsonObject(repaired);
+		if (repairedParsed) {
+			return repairedParsed;
+		}
+
+		const withoutTrailingCommas = repaired.replaceAll(/,\s*([}\]])/g, "$1");
+		if (withoutTrailingCommas !== repaired) {
+			return parseJsonObject(withoutTrailingCommas);
+		}
+
+		return null;
+	}
+
 	const normalized = content.trim();
 	if (!normalized) {
 		return null;
 	}
 
-	try {
-		const parsed = JSON.parse(normalized);
-		return parsed && typeof parsed === "object"
-			? (parsed as Record<string, unknown>)
-			: null;
-	} catch {
-		// no-op
+	const parsedDirect = parseJsonObjectWithRepair(normalized);
+	if (parsedDirect) {
+		return parsedDirect;
 	}
 
 	const withoutFence = normalized
@@ -87,14 +169,7 @@ function extractJsonObject(content: string): Record<string, unknown> | null {
 		return null;
 	}
 
-	try {
-		const parsed = JSON.parse(withoutFence.slice(start, end + 1));
-		return parsed && typeof parsed === "object"
-			? (parsed as Record<string, unknown>)
-			: null;
-	} catch {
-		return null;
-	}
+	return parseJsonObjectWithRepair(withoutFence.slice(start, end + 1));
 }
 
 function normalizeKeywords(value: unknown): string | null {
@@ -172,7 +247,7 @@ async function requestGeneratedSeoPayload(
 		],
 		{
 			temperature: 0.2,
-			maxTokens: 700,
+			maxTokens: SEO_COMPLETION_MAX_TOKENS,
 			timeoutMs: 20_000,
 			jsonMode: true,
 		},
@@ -220,7 +295,10 @@ export async function generatePostSeoWithInternalAi(
 	);
 	if (!generatedResponse.payload) {
 		const snippet =
-			sanitizePlainText(generatedResponse.rawResponse, 180) || "空响应";
+			sanitizePlainText(
+				generatedResponse.rawResponse,
+				ERROR_RESPONSE_SNIPPET_LENGTH,
+			) || "空响应";
 		throw new Error(
 			`AI 返回内容无法解析为 JSON，请确认模型支持 JSON 输出。响应片段：${snippet}`,
 		);
