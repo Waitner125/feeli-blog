@@ -93,6 +93,19 @@ function resolveAlert(
 	}
 }
 
+function formatDateTime(value: string | null | undefined): string {
+	if (!value) {
+		return "-";
+	}
+
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) {
+		return value;
+	}
+
+	return date.toLocaleString("zh-CN", { hour12: false });
+}
+
 function renderRows(rows: WebMentionRow[], csrfToken: string) {
 	if (rows.length === 0) {
 		return '<p class="form-help">当前没有记录。</p>';
@@ -101,51 +114,84 @@ function renderRows(rows: WebMentionRow[], csrfToken: string) {
 	return rows
 		.map(
 			(item) => `
-				<article class="appearance-panel" style="margin-bottom: 1rem;">
-					<div style="display: flex; gap: 0.8rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+				<article class="appearance-panel review-card">
+					<div class="review-card-header">
 						<div>
-							<h3 style="margin-bottom: 0.2rem;">${escapeHtml(item.sourceTitle || "未解析标题")}</h3>
-							<p class="form-help" style="margin-top: 0;">
-								提交时间：${new Date(item.createdAt).toLocaleString()}${item.lastCheckedAt ? ` · 最近校验：${new Date(item.lastCheckedAt).toLocaleString()}` : ""}
+							<h3 class="review-card-title">${escapeHtml(item.sourceTitle || "未解析标题")}</h3>
+							<p class="form-help review-card-meta">
+								提交时间：${escapeHtml(formatDateTime(item.createdAt))}${item.lastCheckedAt ? ` · 最近校验：${escapeHtml(formatDateTime(item.lastCheckedAt))}` : ""}
 							</p>
 						</div>
 						<span class="badge badge-${escapeAttribute(getStatusBadgeClass(item.status))}">${escapeHtml(getStatusLabel(item.status))}</span>
 					</div>
 
-					<div style="margin-top: 0.85rem; display: grid; gap: 0.5rem;">
-						<p><strong>来源：</strong><a href="${escapeAttribute(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.sourceUrl)}</a></p>
-						<p><strong>目标：</strong><a href="${escapeAttribute(item.targetUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.targetUrl)}</a></p>
-						${item.sourceAuthor ? `<p><strong>作者：</strong>${escapeHtml(item.sourceAuthor)}</p>` : ""}
-						${item.sourcePublishedAt ? `<p><strong>来源发布时间：</strong>${escapeHtml(new Date(item.sourcePublishedAt).toLocaleString())}</p>` : ""}
-						${item.sourceExcerpt ? `<p><strong>摘要：</strong>${escapeHtml(item.sourceExcerpt)}</p>` : ""}
+					<div class="review-card-body">
+						<div class="review-item">
+							<span class="review-item-label">来源链接</span>
+							<span class="review-item-value"><a href="${escapeAttribute(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.sourceUrl)}</a></span>
+						</div>
+						<div class="review-item">
+							<span class="review-item-label">目标链接</span>
+							<span class="review-item-value"><a href="${escapeAttribute(item.targetUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.targetUrl)}</a></span>
+						</div>
+						${
+							item.sourceAuthor
+								? `<div class="review-item">
+							<span class="review-item-label">作者</span>
+							<span class="review-item-value">${escapeHtml(item.sourceAuthor)}</span>
+						</div>`
+								: ""
+						}
+						${
+							item.sourcePublishedAt
+								? `<div class="review-item">
+							<span class="review-item-label">来源发布时间</span>
+							<span class="review-item-value">${escapeHtml(formatDateTime(item.sourcePublishedAt))}</span>
+						</div>`
+								: ""
+						}
+						${
+							item.sourceExcerpt
+								? `<div class="review-item review-item-span-2">
+							<span class="review-item-label">摘要</span>
+							<span class="review-item-value">${escapeHtml(item.sourceExcerpt)}</span>
+						</div>`
+								: ""
+						}
+						<div class="review-item">
+							<span class="review-item-label">最后审核</span>
+							<span class="review-item-value">${escapeHtml(formatDateTime(item.reviewedAt))}</span>
+						</div>
 					</div>
 
-					<form method="post" action="/api/admin/mentions/${item.id}/review" style="margin-top: 0.9rem; display: grid; gap: 0.6rem;">
-						<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
-						<div class="appearance-inline-grid">
-							<div>
-								<label for="status-${item.id}">审核状态</label>
-								<select id="status-${item.id}" name="status" class="form-select">
-									${WEBMENTION_STATUS_VALUES.map(
-										(value) =>
-											`<option value="${value}" ${item.status === value ? "selected" : ""}>${escapeHtml(getStatusLabel(value))}</option>`,
-									).join("")}
-								</select>
+					<div class="review-card-actions">
+						<form method="post" action="/api/admin/mentions/${item.id}/review" class="review-review-form">
+							<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+							<div class="appearance-inline-grid">
+								<div class="form-group form-group-tight">
+									<label for="status-${item.id}">审核状态</label>
+									<select id="status-${item.id}" name="status" class="form-select">
+										${WEBMENTION_STATUS_VALUES.map(
+											(value) =>
+												`<option value="${value}" ${item.status === value ? "selected" : ""}>${escapeHtml(getStatusLabel(value))}</option>`,
+										).join("")}
+									</select>
+								</div>
+								<div class="form-group form-group-tight">
+									<label for="reviewNote-${item.id}">审核备注</label>
+									<input id="reviewNote-${item.id}" name="reviewNote" class="form-input" maxlength="320" value="${escapeAttribute(item.reviewNote || "")}" placeholder="可选" />
+								</div>
 							</div>
-							<div>
-								<label for="reviewNote-${item.id}">审核备注</label>
-								<input id="reviewNote-${item.id}" name="reviewNote" class="form-input" maxlength="320" value="${escapeAttribute(item.reviewNote || "")}" placeholder="可选" />
+							<div class="form-actions">
+								<button type="submit" class="btn btn-primary btn-sm">保存审核</button>
 							</div>
-						</div>
-						<div class="form-actions">
-							<button type="submit" class="btn btn-primary btn-sm">保存审核</button>
-						</div>
-					</form>
+						</form>
 
-					<form method="post" action="/api/admin/mentions/${item.id}/delete" data-confirm-message="${escapeAttribute("确认删除这条提及记录吗？")}" style="margin-top: 0.65rem;">
-						<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
-						<button type="submit" class="btn btn-sm btn-danger">删除记录</button>
-					</form>
+						<form method="post" action="/api/admin/mentions/${item.id}/delete" data-confirm-message="${escapeAttribute("确认删除这条提及记录吗？")}" class="review-delete-form">
+							<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+							<button type="submit" class="btn btn-sm btn-danger">删除记录</button>
+						</form>
+					</div>
 				</article>
 			`,
 		)

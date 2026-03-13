@@ -220,4 +220,22 @@ describe("后台界面风格保护", () => {
 			),
 		);
 	});
+
+	test("友链与提及审核页使用结构化卡片布局，避免信息遮挡", async () => {
+		const [friendsSource, mentionsSource, layoutSource] = await Promise.all([
+			readFile("src/admin/routes/friends.ts", "utf8"),
+			readFile("src/admin/routes/mentions.ts", "utf8"),
+			readFile("src/admin/views/layout.ts", "utf8"),
+		]);
+
+		assert.match(friendsSource, /class="appearance-panel review-card"/u);
+		assert.match(mentionsSource, /class="appearance-panel review-card"/u);
+		assert.match(friendsSource, /review-card-body/u);
+		assert.match(mentionsSource, /review-card-body/u);
+		assert.match(friendsSource, /toLocaleString\("zh-CN"/u);
+		assert.match(mentionsSource, /toLocaleString\("zh-CN"/u);
+		assert.match(layoutSource, /\.review-card/u);
+		assert.match(layoutSource, /\.review-item-value/u);
+		assert.match(layoutSource, /\.appearance-inline-grid/u);
+	});
 });
