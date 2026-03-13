@@ -232,7 +232,7 @@ analytics.get("/", async (c) => {
 	const content = `
 		<div class="page-header">
 			<h1>访问统计</h1>
-			<div class="table-actions">
+			<div class="table-actions analytics-actions">
 				<a href="/api/admin/analytics/export?format=jsonl" class="btn">下载全部明细（JSONL）</a>
 				<a href="/api/admin/analytics/export?format=json" class="btn">下载全部明细（JSON）</a>
 				<a href="/api/admin/analytics?cleanup=1" class="btn">清理 ${ANALYTICS_RETENTION_DAYS} 天前数据</a>

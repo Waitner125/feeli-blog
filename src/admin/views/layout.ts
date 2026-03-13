@@ -319,6 +319,11 @@ export const adminSharedStyles = `
 			min-width: 0;
 		}
 
+		.admin-page-content {
+			min-width: 0;
+			width: 100%;
+		}
+
 		.page-header,
 		.section-heading {
 			display: flex;
@@ -410,6 +415,9 @@ export const adminSharedStyles = `
 		.table-card {
 			padding: 0.4rem 0;
 			margin-bottom: 1.5rem;
+			overflow-x: auto;
+			overflow-y: hidden;
+			-webkit-overflow-scrolling: touch;
 		}
 
 		.data-table {
@@ -451,6 +459,11 @@ export const adminSharedStyles = `
 
 		.table-actions form {
 			display: inline-flex;
+		}
+
+		.analytics-actions .btn {
+			max-width: 100%;
+			white-space: normal;
 		}
 
 		.btn {
@@ -1131,6 +1144,11 @@ export const adminSharedStyles = `
 
 			.markdown-editor-shell {
 				grid-template-columns: 1fr;
+			}
+
+			.analytics-actions {
+				width: 100%;
+				justify-content: flex-start;
 			}
 		}
 
