@@ -8,11 +8,13 @@ import {
 } from "@/lib/media";
 import { escapeAttribute, escapeHtml, sanitizeMediaKey } from "@/lib/security";
 import {
+	type AiApiKeySource,
 	type AiSettings,
 	DEFAULT_AI_SETTINGS,
 	DEFAULT_SITE_APPEARANCE,
 	getAiSettings,
 	getSiteAppearance,
+	resolveAiSettingsWithSecrets,
 	type SiteNavLink,
 	saveAiSettings,
 	saveSiteAppearance,
@@ -148,9 +150,24 @@ function renderAppearancePage(options: {
 	csrfToken: string;
 	settings: typeof DEFAULT_SITE_APPEARANCE;
 	aiSettings: AiSettings;
+	aiKeySource: {
+		internal: AiApiKeySource;
+		public: AiApiKeySource;
+	};
+	aiWebKeyStatus: {
+		internalHasSavedKey: boolean;
+		publicHasSavedKey: boolean;
+	};
 	alert?: { type: "success" | "error"; message: string };
 }) {
-	const { csrfToken, settings, aiSettings, alert } = options;
+	const {
+		csrfToken,
+		settings,
+		aiSettings,
+		aiKeySource,
+		aiWebKeyStatus,
+		alert,
+	} = options;
 	const backgroundScaleOffset = Math.min(
 		80,
 		Math.max(0, settings.backgroundScale - 100),
@@ -166,6 +183,26 @@ function renderAppearancePage(options: {
 	const alertHtml = alert
 		? `<div class="alert alert-${escapeAttribute(alert.type)}">${escapeHtml(alert.message)}</div>`
 		: "";
+	const internalManagedBySecret = aiKeySource.internal === "cloudflare-secret";
+	const publicManagedBySecret = aiKeySource.public === "cloudflare-secret";
+	const internalApiKeyHelp = internalManagedBySecret
+		? "当前优先使用 Cloudflare Secret：AI_INTERNAL_API_KEY，Web 表单不会覆盖此值。"
+		: aiWebKeyStatus.internalHasSavedKey
+			? "已保存 API Key（出于安全原因不回显）。留空提交可保持不变。"
+			: "当前未保存 API Key。留空提交将保持为空。";
+	const publicApiKeyHelp = publicManagedBySecret
+		? "当前优先使用 Cloudflare Secret：AI_PUBLIC_API_KEY，Web 表单不会覆盖此值。"
+		: aiWebKeyStatus.publicHasSavedKey
+			? "已保存 API Key（出于安全原因不回显）。留空提交可保持不变。"
+			: "当前未保存 API Key。留空提交将保持为空。";
+	const internalApiPlaceholder = internalManagedBySecret
+		? "已由 AI_INTERNAL_API_KEY 接管"
+		: "留空表示不修改当前 Key";
+	const publicApiPlaceholder = publicManagedBySecret
+		? "已由 AI_PUBLIC_API_KEY 接管"
+		: "留空表示不修改当前 Key";
+	const internalApiDisabled = internalManagedBySecret ? "disabled" : "";
+	const publicApiDisabled = publicManagedBySecret ? "disabled" : "";
 
 	return `
 		<style>
@@ -796,7 +833,7 @@ function renderAppearancePage(options: {
 				</section>
 				<section class="appearance-panel">
 					<h2>AI 模型接口（OpenAI 兼容）</h2>
-					<p class="appearance-note">内部接口用于自动摘要与 SEO 生成；公开接口先仅保存配置，后续可用于访客对话功能。</p>
+					<p class="appearance-note">内部接口用于自动摘要与 SEO 生成；公开接口用于访客对话，默认叠加限流、配额与 Turnstile 校验防刷。</p>
 					<div class="appearance-content-fieldset">
 						<h3>内部接口（自动摘要与 SEO）</h3>
 						<div class="form-group">
@@ -841,11 +878,12 @@ function renderAppearancePage(options: {
 								name="aiInternalApiKey"
 								type="password"
 								class="form-input"
-								value="${escapeAttribute(aiSettings.internal.apiKey)}"
 								maxlength="400"
 								autocomplete="off"
-								placeholder="sk-..."
+								placeholder="${escapeAttribute(internalApiPlaceholder)}"
+								${internalApiDisabled}
 							/>
+							<p class="form-help">${escapeHtml(internalApiKeyHelp)}</p>
 						</div>
 					</div>
 					<div class="appearance-content-fieldset">
@@ -892,11 +930,12 @@ function renderAppearancePage(options: {
 								name="aiPublicApiKey"
 								type="password"
 								class="form-input"
-								value="${escapeAttribute(aiSettings.public.apiKey)}"
 								maxlength="400"
 								autocomplete="off"
-								placeholder="sk-..."
+								placeholder="${escapeAttribute(publicApiPlaceholder)}"
+								${publicApiDisabled}
 							/>
+							<p class="form-help">${escapeHtml(publicApiKeyHelp)}</p>
 						</div>
 					</div>
 				</section>
@@ -953,6 +992,7 @@ appearance.get("/", async (c) => {
 	} catch {
 		// D1 未绑定时回退默认 AI 配置
 	}
+	const resolvedAi = resolveAiSettingsWithSecrets(aiSettings, c.env);
 
 	return c.html(
 		adminLayout(
@@ -960,7 +1000,12 @@ appearance.get("/", async (c) => {
 			renderAppearancePage({
 				csrfToken: session.csrfToken,
 				settings,
-				aiSettings,
+				aiSettings: resolvedAi.settings,
+				aiKeySource: resolvedAi.keySource,
+				aiWebKeyStatus: {
+					internalHasSavedKey: Boolean(aiSettings.internal.apiKey.trim()),
+					publicHasSavedKey: Boolean(aiSettings.public.apiKey.trim()),
+				},
 				alert: getAppearanceAlert(c.req.url),
 			}),
 			{ csrfToken: session.csrfToken },
@@ -990,6 +1035,19 @@ appearance.post("/", async (c) => {
 		getBodyText(body, "heroCardBlur") || Number.NaN,
 	);
 	const db = getDb(c.env.DB);
+	const storedAiSettings = await getAiSettings(db).catch(
+		() => DEFAULT_AI_SETTINGS,
+	);
+	const internalInputApiKey = getBodyText(body, "aiInternalApiKey").trim();
+	const publicInputApiKey = getBodyText(body, "aiPublicApiKey").trim();
+	const useInternalSecret = Boolean(c.env.AI_INTERNAL_API_KEY?.trim());
+	const usePublicSecret = Boolean(c.env.AI_PUBLIC_API_KEY?.trim());
+	const nextInternalApiKey = useInternalSecret
+		? storedAiSettings.internal.apiKey
+		: internalInputApiKey || storedAiSettings.internal.apiKey;
+	const nextPublicApiKey = usePublicSecret
+		? storedAiSettings.public.apiKey
+		: publicInputApiKey || storedAiSettings.public.apiKey;
 
 	await saveSiteAppearance(db, {
 		backgroundImageKey: backgroundImageKey || null,
@@ -1032,11 +1090,11 @@ appearance.post("/", async (c) => {
 	await saveAiSettings(db, {
 		aiInternalEnabled: getBodyText(body, "aiInternalEnabled"),
 		aiInternalBaseUrl: getBodyText(body, "aiInternalBaseUrl"),
-		aiInternalApiKey: getBodyText(body, "aiInternalApiKey"),
+		aiInternalApiKey: nextInternalApiKey,
 		aiInternalModel: getBodyText(body, "aiInternalModel"),
 		aiPublicEnabled: getBodyText(body, "aiPublicEnabled"),
 		aiPublicBaseUrl: getBodyText(body, "aiPublicBaseUrl"),
-		aiPublicApiKey: getBodyText(body, "aiPublicApiKey"),
+		aiPublicApiKey: nextPublicApiKey,
 		aiPublicModel: getBodyText(body, "aiPublicModel"),
 	});
 

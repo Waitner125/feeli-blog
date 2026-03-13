@@ -21,3 +21,11 @@ AUTO_DEPLOY_WEBHOOK_URL=
 AUTO_DEPLOY_WEBHOOK_SECRET=
 # 可选：GitHub dispatch 事件名，默认 rebuild-search-index 喵
 AUTO_DEPLOY_GITHUB_EVENT_TYPE=rebuild-search-index
+# 可选：内部 AI API Key（设置后优先于后台 Web 配置）喵
+AI_INTERNAL_API_KEY=
+# 可选：公开 AI API Key（设置后优先于后台 Web 配置）喵
+AI_PUBLIC_API_KEY=
+# 可选：公开 AI 每分钟每 IP 限流，默认 12 喵
+PUBLIC_AI_RATE_LIMIT_PER_MINUTE=12
+# 可选：公开 AI 每日每 IP 配额，默认 120 喵
+PUBLIC_AI_DAILY_LIMIT_PER_IP=120

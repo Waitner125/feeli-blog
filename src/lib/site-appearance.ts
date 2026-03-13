@@ -70,6 +70,16 @@ export interface AiSettings {
 	public: OpenAICompatibleEndpointConfig;
 }
 
+export type AiApiKeySource = "cloudflare-secret" | "web-config" | "empty";
+
+export interface ResolvedAiSettings {
+	settings: AiSettings;
+	keySource: {
+		internal: AiApiKeySource;
+		public: AiApiKeySource;
+	};
+}
+
 export type SiteAppearanceInput = Partial<SiteAppearance> & {
 	navLinksJson?: unknown;
 	heroActionsJson?: unknown;
@@ -194,6 +204,23 @@ function normalizeBoolean(value: unknown, fallback: boolean) {
 function normalizeApiKey(value: unknown, fallback: string) {
 	const normalized = sanitizePlainText(value, 400);
 	return normalized || fallback;
+}
+
+function resolveApiKeyFromSecretOrWeb(options: {
+	secretValue: unknown;
+	webValue: string;
+}): { apiKey: string; source: AiApiKeySource } {
+	const secret = sanitizePlainText(options.secretValue, 400);
+	if (secret) {
+		return { apiKey: secret, source: "cloudflare-secret" };
+	}
+
+	const web = sanitizePlainText(options.webValue, 400);
+	if (web) {
+		return { apiKey: web, source: "web-config" };
+	}
+
+	return { apiKey: "", source: "empty" };
 }
 
 function normalizeModel(value: unknown, fallback: string) {
@@ -350,6 +377,37 @@ export function normalizeAiSettingsInput(input: AiSettingsInput): AiSettings {
 				rawPublic.model ?? input.aiPublicModel,
 				DEFAULT_AI_SETTINGS.public.model,
 			),
+		},
+	};
+}
+
+export function resolveAiSettingsWithSecrets(
+	aiSettings: AiSettings,
+	env: Partial<Pick<Env, "AI_INTERNAL_API_KEY" | "AI_PUBLIC_API_KEY">>,
+): ResolvedAiSettings {
+	const internal = resolveApiKeyFromSecretOrWeb({
+		secretValue: env.AI_INTERNAL_API_KEY,
+		webValue: aiSettings.internal.apiKey,
+	});
+	const publicEndpoint = resolveApiKeyFromSecretOrWeb({
+		secretValue: env.AI_PUBLIC_API_KEY,
+		webValue: aiSettings.public.apiKey,
+	});
+
+	return {
+		settings: {
+			internal: {
+				...aiSettings.internal,
+				apiKey: internal.apiKey,
+			},
+			public: {
+				...aiSettings.public,
+				apiKey: publicEndpoint.apiKey,
+			},
+		},
+		keySource: {
+			internal: internal.source,
+			public: publicEndpoint.source,
 		},
 	};
 }
@@ -652,6 +710,14 @@ export async function getAiSettings(db: Database): Promise<AiSettings> {
 	}
 
 	return normalizeAiSettingsInput(row);
+}
+
+export async function getResolvedAiSettings(
+	db: Database,
+	env: Partial<Pick<Env, "AI_INTERNAL_API_KEY" | "AI_PUBLIC_API_KEY">>,
+): Promise<ResolvedAiSettings> {
+	const aiSettings = await getAiSettings(db);
+	return resolveAiSettingsWithSecrets(aiSettings, env);
 }
 
 export async function saveAiSettings(db: Database, input: AiSettingsInput) {

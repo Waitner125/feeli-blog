@@ -62,6 +62,16 @@ describe("后台界面风格保护", () => {
 		assert.match(source, /aiPublicBaseUrl/u);
 		assert.match(source, /aiPublicApiKey/u);
 		assert.match(source, /aiPublicModel/u);
+		assert.doesNotMatch(
+			source,
+			/value="\$\{escapeAttribute\(aiSettings\.internal\.apiKey\)\}"/u,
+		);
+		assert.doesNotMatch(
+			source,
+			/value="\$\{escapeAttribute\(aiSettings\.public\.apiKey\)\}"/u,
+		);
+		assert.match(source, /留空表示不修改当前 Key/u);
+		assert.match(source, /Cloudflare Secret/u);
 	});
 
 	test("文章封面上传会回填隐藏字段用于持久化保存", async () => {

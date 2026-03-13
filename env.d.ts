@@ -23,6 +23,10 @@ interface Env {
 	GITHUB_OAUTH_CLIENT_ID: string;
 	GITHUB_OAUTH_CLIENT_SECRET: string;
 	GITHUB_OAUTH_REDIRECT_URI: string;
+	AI_INTERNAL_API_KEY?: string;
+	AI_PUBLIC_API_KEY?: string;
+	PUBLIC_AI_RATE_LIMIT_PER_MINUTE?: string;
+	PUBLIC_AI_DAILY_LIMIT_PER_IP?: string;
 }
 
 declare namespace App {

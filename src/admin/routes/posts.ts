@@ -15,7 +15,10 @@ import {
 	sanitizePostStatus,
 	sanitizeSlug,
 } from "@/lib/security";
-import { DEFAULT_AI_SETTINGS, getAiSettings } from "@/lib/site-appearance";
+import {
+	DEFAULT_AI_SETTINGS,
+	getResolvedAiSettings,
+} from "@/lib/site-appearance";
 import {
 	type AdminAppEnv,
 	assertCsrfToken,
@@ -511,10 +514,16 @@ posts.post("/", async (c) => {
 	if ("error" in parsed) {
 		return c.html(renderPostErrorPage(session.csrfToken, parsed.error), 400);
 	}
-	const aiSettings = await getAiSettings(db).catch(() => DEFAULT_AI_SETTINGS);
+	const aiSettings = await getResolvedAiSettings(db, c.env).catch(() => ({
+		settings: DEFAULT_AI_SETTINGS,
+		keySource: {
+			internal: "empty" as const,
+			public: "empty" as const,
+		},
+	}));
 	const postInput = await autoFillPostSeoWithInternalAi(
 		parsed.data,
-		aiSettings.internal,
+		aiSettings.settings.internal,
 	);
 
 	const now = new Date().toISOString();
@@ -636,10 +645,16 @@ posts.post("/:id", async (c) => {
 	if ("error" in parsed) {
 		return c.html(renderPostErrorPage(session.csrfToken, parsed.error), 400);
 	}
-	const aiSettings = await getAiSettings(db).catch(() => DEFAULT_AI_SETTINGS);
+	const aiSettings = await getResolvedAiSettings(db, c.env).catch(() => ({
+		settings: DEFAULT_AI_SETTINGS,
+		keySource: {
+			internal: "empty" as const,
+			public: "empty" as const,
+		},
+	}));
 	const postInput = await autoFillPostSeoWithInternalAi(
 		parsed.data,
-		aiSettings.internal,
+		aiSettings.settings.internal,
 	);
 
 	const now = new Date().toISOString();

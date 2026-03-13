@@ -9,6 +9,7 @@ import { friendsRoutes } from "./routes/friends";
 import { mediaRoutes } from "./routes/media";
 import { mentionsRoutes } from "./routes/mentions";
 import { postsRoutes } from "./routes/posts";
+import { publicAiRoutes } from "./routes/public-ai";
 import { publicAnalyticsRoutes } from "./routes/public-analytics";
 import { webmentionRoutes } from "./routes/webmention";
 
@@ -77,6 +78,7 @@ app.use("*", async (c, next) => {
 
 app.route("/auth", authRoutes);
 app.route("/analytics", publicAnalyticsRoutes);
+app.route("/ai", publicAiRoutes);
 app.route("/admin", dashboardRoutes);
 app.route("/admin/appearance", appearanceRoutes);
 app.route("/admin/posts", postsRoutes);

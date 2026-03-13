@@ -8,6 +8,7 @@ import {
 	DEFAULT_SITE_APPEARANCE,
 	normalizeAiSettingsInput,
 	normalizeSiteAppearanceInput,
+	resolveAiSettingsWithSecrets,
 } from "../../src/lib/site-appearance";
 
 describe("站点外观设置", () => {
@@ -158,6 +159,34 @@ describe("站点外观设置", () => {
 
 		assert.deepEqual(normalized.internal, DEFAULT_AI_SETTINGS.internal);
 		assert.deepEqual(normalized.public, DEFAULT_AI_SETTINGS.public);
+	});
+
+	test("resolveAiSettingsWithSecrets 会优先使用 Cloudflare Secret", () => {
+		const resolved = resolveAiSettingsWithSecrets(
+			{
+				internal: {
+					enabled: true,
+					baseUrl: "https://api.openai.com/v1",
+					apiKey: "sk-web-internal",
+					model: "gpt-4o-mini",
+				},
+				public: {
+					enabled: true,
+					baseUrl: "https://llm.example.com/v1",
+					apiKey: "sk-web-public",
+					model: "qwen-plus",
+				},
+			},
+			{
+				AI_INTERNAL_API_KEY: "sk-secret-internal",
+				AI_PUBLIC_API_KEY: "",
+			},
+		);
+
+		assert.equal(resolved.settings.internal.apiKey, "sk-secret-internal");
+		assert.equal(resolved.settings.public.apiKey, "sk-web-public");
+		assert.equal(resolved.keySource.internal, "cloudflare-secret");
+		assert.equal(resolved.keySource.public, "web-config");
 	});
 
 	test("buildSiteNavLinks 会按顺序生成顶部导航数据", () => {

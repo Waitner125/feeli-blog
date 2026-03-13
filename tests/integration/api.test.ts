@@ -187,6 +187,76 @@ describe("后台接口", () => {
 		);
 	});
 
+	test("POST /ai/chat 会拒绝跨站来源请求", async () => {
+		const res = await app.request(
+			"/ai/chat",
+			{
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					origin: "https://evil.example.com",
+				},
+				body: JSON.stringify({
+					message: "你好",
+				}),
+			},
+			mockEnv,
+		);
+
+		assert.equal(res.status, 403);
+		assert.match(await res.text(), /非法来源请求/u);
+	});
+
+	test("POST /ai/chat 在公开接口未配置时返回 503", async () => {
+		const res = await app.request(
+			"/ai/chat",
+			{
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost",
+				},
+				body: JSON.stringify({
+					message: "帮我总结这篇文章",
+				}),
+			},
+			mockEnv,
+		);
+
+		assert.equal(res.status, 503);
+		assert.match(await res.text(), /公开 AI 接口/u);
+	});
+
+	test("POST /ai/chat 在超过分钟限流时返回 429", async () => {
+		const res = await app.request(
+			"/ai/chat",
+			{
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost",
+					"CF-Connecting-IP": "203.0.113.77",
+				},
+				body: JSON.stringify({
+					message: "限流测试",
+				}),
+			},
+			{
+				...mockEnv,
+				PUBLIC_AI_RATE_LIMIT_PER_MINUTE: "1",
+				SESSION: {
+					get: async (key: string) =>
+						key.startsWith("public-ai:minute:") ? "1" : null,
+					put: async () => undefined,
+					delete: async () => undefined,
+				},
+			} as unknown as Env,
+		);
+
+		assert.equal(res.status, 429);
+		assert.match(await res.text(), /请求过于频繁/u);
+	});
+
 	test("未登录访问 /admin 会跳转到登录页", async () => {
 		const res = await app.request("/admin", { redirect: "manual" });
 		assert.equal(res.status, 302);
