@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
+import { maybeCleanupAnalyticsData } from "@/admin/lib/analytics-retention";
 import { sanitizeCanonicalUrl, sanitizePlainText } from "@/lib/security";
 import type { AdminAppEnv } from "../middleware/auth";
 
@@ -257,6 +258,10 @@ publicAnalyticsRoutes.post("/track", async (c) => {
 	const ipAddress = parseClientIp(c);
 
 	try {
+		if (payload.touchSession) {
+			await maybeCleanupAnalyticsData(c.env);
+		}
+
 		if (payload.touchSession) {
 			await c.env.DB.prepare(UPSERT_SESSION_SQL)
 				.bind(

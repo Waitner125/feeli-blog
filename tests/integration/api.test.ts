@@ -119,10 +119,15 @@ describe("后台接口", () => {
 		);
 
 		assert.equal(res.status, 204);
-		assert.equal(calls.length, 2);
-		assert.match(calls[0]?.sql ?? "", /insert into analytics_sessions/iu);
-		assert.match(calls[1]?.sql ?? "", /insert into analytics_events/iu);
-		assert.equal(calls[0]?.params[1], "203.0.113.10");
+		const sessionUpsert = calls.find((entry) =>
+			/insert into analytics_sessions/iu.test(entry.sql),
+		);
+		const eventInsert = calls.find((entry) =>
+			/insert into analytics_events/iu.test(entry.sql),
+		);
+		assert.ok(sessionUpsert);
+		assert.ok(eventInsert);
+		assert.equal(sessionUpsert?.params[1], "203.0.113.10");
 	});
 
 	test("POST /analytics/track 会拒绝无效事件数据", async () => {
@@ -173,8 +178,13 @@ describe("后台接口", () => {
 		);
 
 		assert.equal(res.status, 204);
-		assert.equal(calls.length, 1);
-		assert.match(calls[0]?.sql ?? "", /insert into analytics_events/iu);
+		assert.equal(
+			calls.some((entry) => /insert into analytics_sessions/iu.test(entry.sql)),
+			false,
+		);
+		assert.ok(
+			calls.some((entry) => /insert into analytics_events/iu.test(entry.sql)),
+		);
 	});
 
 	test("未登录访问 /admin 会跳转到登录页", async () => {
