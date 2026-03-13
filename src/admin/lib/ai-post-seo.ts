@@ -210,6 +210,111 @@ function normalizeGeneratedSeoFields(
 	};
 }
 
+function normalizeLooseTextField(
+	value: string,
+	maxLength: number,
+	options?: { allowNewlines?: boolean },
+): string | null {
+	const normalized = value
+		.trim()
+		.replaceAll(/^[\s"“”'`[{(]+/g, "")
+		.replaceAll(/[\s"“”'`}\]),;]+$/g, "")
+		.replaceAll(/\\n/g, "\n")
+		.replaceAll(/\\t/g, "\t");
+	return (
+		sanitizePlainText(normalized, maxLength, {
+			allowNewlines: options?.allowNewlines ?? false,
+		}) || null
+	);
+}
+
+function extractLooseGeneratedSeoPayload(
+	content: string,
+): GeneratedSeoPayload | null {
+	const source = content
+		.replace(/^```(?:json)?\s*/iu, "")
+		.replace(/```$/u, "")
+		.trim();
+	if (!source) {
+		return null;
+	}
+
+	const keyOrder = ["excerpt", "metaTitle", "metaDescription", "metaKeywords"];
+	const matches = keyOrder
+		.map((key) => {
+			const pattern = new RegExp(`["“”']?${key}["“”']?\\s*[:：]`, "iu");
+			const match = pattern.exec(source);
+			return match
+				? {
+						key,
+						index: match.index,
+						valueStart: match.index + match[0].length,
+					}
+				: null;
+		})
+		.filter(Boolean)
+		.sort((left, right) => left.index - right.index) as Array<{
+		key: string;
+		index: number;
+		valueStart: number;
+	}>;
+
+	if (matches.length === 0) {
+		return null;
+	}
+
+	const payload: GeneratedSeoPayload = {};
+	for (let index = 0; index < matches.length; index += 1) {
+		const current = matches[index];
+		const next = matches[index + 1];
+		const rawValue = source
+			.slice(current.valueStart, next ? next.index : source.length)
+			.trim();
+		if (!rawValue) {
+			continue;
+		}
+
+		if (current.key === "metaKeywords") {
+			const arrayMatch = rawValue.match(/\[([\s\S]*?)\]/u);
+			if (arrayMatch) {
+				payload.metaKeywords = arrayMatch[1]
+					.split(/[,，\n]/u)
+					.map((item) => normalizeLooseTextField(item, 24))
+					.filter(Boolean);
+				continue;
+			}
+
+			const keywordText = normalizeLooseTextField(rawValue, 120);
+			if (keywordText) {
+				payload.metaKeywords = keywordText
+					.split(/[,，\n]/u)
+					.map((item) => sanitizePlainText(item, 24))
+					.filter(Boolean);
+			}
+			continue;
+		}
+
+		const maxLength =
+			current.key === "excerpt"
+				? 200
+				: current.key === "metaDescription"
+					? 160
+					: 200;
+		const value = normalizeLooseTextField(rawValue, maxLength, {
+			allowNewlines: current.key === "excerpt",
+		});
+		if (!value) {
+			continue;
+		}
+
+		if (current.key === "excerpt") payload.excerpt = value;
+		if (current.key === "metaTitle") payload.metaTitle = value;
+		if (current.key === "metaDescription") payload.metaDescription = value;
+	}
+
+	return payload;
+}
+
 async function requestGeneratedSeoPayload(
 	input: { title: string; content: string },
 	endpoint: OpenAICompatibleEndpointConfig,
@@ -293,7 +398,10 @@ export async function generatePostSeoWithInternalAi(
 		},
 		endpoint,
 	);
-	if (!generatedResponse.payload) {
+	const parsedPayload =
+		generatedResponse.payload ||
+		extractLooseGeneratedSeoPayload(generatedResponse.rawResponse);
+	if (!parsedPayload) {
 		const snippet =
 			sanitizePlainText(
 				generatedResponse.rawResponse,
@@ -304,7 +412,7 @@ export async function generatePostSeoWithInternalAi(
 		);
 	}
 
-	const normalized = normalizeGeneratedSeoFields(generatedResponse.payload);
+	const normalized = normalizeGeneratedSeoFields(parsedPayload);
 	if (
 		!normalized.excerpt &&
 		!normalized.metaTitle &&
