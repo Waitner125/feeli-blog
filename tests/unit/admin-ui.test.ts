@@ -228,13 +228,23 @@ describe("后台界面风格保护", () => {
 			readFile("src/admin/views/layout.ts", "utf8"),
 		]);
 
-		assert.match(friendsSource, /class="appearance-panel review-card"/u);
+		assert.match(
+			friendsSource,
+			/<details class="appearance-panel review-card friend-review-item">/u,
+		);
 		assert.match(mentionsSource, /class="appearance-panel review-card"/u);
+		assert.match(friendsSource, /friend-review-summary/u);
+		assert.match(friendsSource, /friend-review-content/u);
 		assert.match(friendsSource, /review-card-body/u);
 		assert.match(mentionsSource, /review-card-body/u);
 		assert.match(friendsSource, /toLocaleString\("zh-CN"/u);
 		assert.match(mentionsSource, /toLocaleString\("zh-CN"/u);
+		assert.doesNotMatch(friendsSource, /待审核（/u);
+		assert.doesNotMatch(friendsSource, /已通过（/u);
+		assert.doesNotMatch(friendsSource, /已拒绝（/u);
+		assert.doesNotMatch(friendsSource, /已下架（/u);
 		assert.match(layoutSource, /\.review-card/u);
+		assert.match(layoutSource, /\.friend-review-summary/u);
 		assert.match(layoutSource, /\.review-item-value/u);
 		assert.match(layoutSource, /\.appearance-inline-grid/u);
 	});

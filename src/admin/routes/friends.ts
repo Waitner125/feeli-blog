@@ -113,78 +113,86 @@ function renderFriendRows(rows: FriendLinkRow[], csrfToken: string) {
 	return rows
 		.map(
 			(item) => `
-			<article class="appearance-panel review-card">
-				<div class="review-card-header">
-					<div>
+			<details class="appearance-panel review-card friend-review-item">
+				<summary class="friend-review-summary">
+					<div class="friend-review-summary-main">
 						<h3 class="review-card-title">${escapeHtml(item.name)}</h3>
 						<p class="form-help review-card-meta">提交时间：${escapeHtml(formatDateTime(item.createdAt))}</p>
 					</div>
-					<span class="badge badge-${escapeAttribute(getFriendBadgeClass(item.status))}">${escapeHtml(getFriendStatusLabel(item.status))}</span>
-				</div>
-
-				<div class="review-card-body">
-					<div class="review-item">
-						<span class="review-item-label">站点</span>
-						<span class="review-item-value"><a href="${escapeAttribute(item.siteUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.siteUrl)}</a></span>
-					</div>
-					${
-						item.avatarUrl
-							? `<div class="review-item">
-						<span class="review-item-label">头像</span>
-						<span class="review-item-value"><a href="${escapeAttribute(item.avatarUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.avatarUrl)}</a></span>
-					</div>`
-							: ""
-					}
-					<div class="review-item review-item-span-2">
-						<span class="review-item-label">简介</span>
-						<span class="review-item-value">${escapeHtml(item.description)}</span>
-					</div>
-					<div class="review-item">
-						<span class="review-item-label">联系方式</span>
-						<span class="review-item-value">${escapeHtml(item.contact)}</span>
-					</div>
-					<div class="review-item">
-						<span class="review-item-label">最后审核</span>
-						<span class="review-item-value">${escapeHtml(formatDateTime(item.reviewedAt))}</span>
-					</div>
-					${
-						item.note
-							? `<div class="review-item review-item-span-2">
-						<span class="review-item-label">站长备注</span>
-						<span class="review-item-value">${escapeHtml(item.note)}</span>
-					</div>`
-							: ""
-					}
-				</div>
-
-				<div class="review-card-actions">
-					<form method="post" action="/api/admin/friends/${item.id}/review" class="review-review-form">
-						<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
-						<div class="appearance-inline-grid">
-							<div class="form-group form-group-tight">
-								<label for="status-${item.id}">审核状态</label>
-								<select id="status-${item.id}" name="status" class="form-select">
-									${FRIEND_LINK_STATUS_VALUES.map(
-										(value) =>
-											`<option value="${value}" ${item.status === value ? "selected" : ""}>${escapeHtml(getFriendStatusLabel(value))}</option>`,
-									).join("")}
-								</select>
-							</div>
-							<div class="form-group form-group-tight">
-								<label for="reviewNote-${item.id}">审核备注</label>
-								<input id="reviewNote-${item.id}" name="reviewNote" class="form-input" maxlength="320" value="${escapeAttribute(item.reviewNote || "")}" placeholder="可选" />
-							</div>
+					<div class="friend-review-summary-extra">
+						<p class="friend-review-summary-site">${escapeHtml(item.siteUrl)}</p>
+						<div class="friend-review-summary-state">
+							<span class="badge badge-${escapeAttribute(getFriendBadgeClass(item.status))}">${escapeHtml(getFriendStatusLabel(item.status))}</span>
+							<span class="friend-review-summary-caret" aria-hidden="true"></span>
 						</div>
-						<div class="form-actions">
-							<button type="submit" class="btn btn-primary btn-sm">保存审核</button>
+					</div>
+				</summary>
+
+				<div class="friend-review-content">
+					<div class="review-card-body">
+						<div class="review-item">
+							<span class="review-item-label">站点</span>
+							<span class="review-item-value"><a href="${escapeAttribute(item.siteUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.siteUrl)}</a></span>
 						</div>
-					</form>
-					<form method="post" action="/api/admin/friends/${item.id}/delete" data-confirm-message="${escapeAttribute("确认删除这条友链记录吗？")}" class="review-delete-form">
-						<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
-						<button type="submit" class="btn btn-sm btn-danger">删除记录</button>
-					</form>
+						${
+							item.avatarUrl
+								? `<div class="review-item">
+							<span class="review-item-label">头像</span>
+							<span class="review-item-value"><a href="${escapeAttribute(item.avatarUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.avatarUrl)}</a></span>
+						</div>`
+								: ""
+						}
+						<div class="review-item review-item-span-2">
+							<span class="review-item-label">简介</span>
+							<span class="review-item-value">${escapeHtml(item.description)}</span>
+						</div>
+						<div class="review-item">
+							<span class="review-item-label">联系方式</span>
+							<span class="review-item-value">${escapeHtml(item.contact)}</span>
+						</div>
+						<div class="review-item">
+							<span class="review-item-label">最后审核</span>
+							<span class="review-item-value">${escapeHtml(formatDateTime(item.reviewedAt))}</span>
+						</div>
+						${
+							item.note
+								? `<div class="review-item review-item-span-2">
+							<span class="review-item-label">站长备注</span>
+							<span class="review-item-value">${escapeHtml(item.note)}</span>
+						</div>`
+								: ""
+						}
+					</div>
+
+					<div class="review-card-actions">
+						<form method="post" action="/api/admin/friends/${item.id}/review" class="review-review-form">
+							<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+							<div class="appearance-inline-grid">
+								<div class="form-group form-group-tight">
+									<label for="status-${item.id}">审核状态</label>
+									<select id="status-${item.id}" name="status" class="form-select">
+										${FRIEND_LINK_STATUS_VALUES.map(
+											(value) =>
+												`<option value="${value}" ${item.status === value ? "selected" : ""}>${escapeHtml(getFriendStatusLabel(value))}</option>`,
+										).join("")}
+									</select>
+								</div>
+								<div class="form-group form-group-tight">
+									<label for="reviewNote-${item.id}">审核备注</label>
+									<input id="reviewNote-${item.id}" name="reviewNote" class="form-input" maxlength="320" value="${escapeAttribute(item.reviewNote || "")}" placeholder="可选" />
+								</div>
+							</div>
+							<div class="form-actions">
+								<button type="submit" class="btn btn-primary btn-sm">保存审核</button>
+							</div>
+						</form>
+						<form method="post" action="/api/admin/friends/${item.id}/delete" data-confirm-message="${escapeAttribute("确认删除这条友链记录吗？")}" class="review-delete-form">
+							<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+							<button type="submit" class="btn btn-sm btn-danger">删除记录</button>
+						</form>
+					</div>
 				</div>
-			</article>
+			</details>
 		`,
 		)
 		.join("");
@@ -196,10 +204,7 @@ function renderFriendsPage(options: {
 	alert?: { type: "success" | "error"; message: string };
 }) {
 	const { rows, csrfToken, alert } = options;
-	const pendingRows = rows.filter((item) => item.status === "pending");
-	const approvedRows = rows.filter((item) => item.status === "approved");
-	const rejectedRows = rows.filter((item) => item.status === "rejected");
-	const offlineRows = rows.filter((item) => item.status === "offline");
+	const pendingCount = rows.filter((item) => item.status === "pending").length;
 
 	return adminLayout(
 		"友链管理",
@@ -208,24 +213,10 @@ function renderFriendsPage(options: {
 			<p class="form-help" style="margin-bottom: 1rem;">审核前台友链申请，支持通过、拒绝、下架与删除记录。</p>
 			${alert ? `<div class="alert alert-${escapeAttribute(alert.type)}">${escapeHtml(alert.message)}</div>` : ""}
 
-			<section style="margin-bottom: 1.2rem;">
-				<h2 style="margin-bottom: 0.8rem;">待审核（${pendingRows.length}）</h2>
-				${renderFriendRows(pendingRows, csrfToken)}
-			</section>
-
-			<section style="margin-bottom: 1.2rem;">
-				<h2 style="margin-bottom: 0.8rem;">已通过（${approvedRows.length}）</h2>
-				${renderFriendRows(approvedRows, csrfToken)}
-			</section>
-
-			<section style="margin-bottom: 1.2rem;">
-				<h2 style="margin-bottom: 0.8rem;">已拒绝（${rejectedRows.length}）</h2>
-				${renderFriendRows(rejectedRows, csrfToken)}
-			</section>
-
 			<section>
-				<h2 style="margin-bottom: 0.8rem;">已下架（${offlineRows.length}）</h2>
-				${renderFriendRows(offlineRows, csrfToken)}
+				<h2 style="margin-bottom: 0.2rem;">申请列表</h2>
+				<p class="form-help" style="margin: 0 0 0.8rem;">共 ${rows.length} 条记录，待审核 ${pendingCount} 条。点击单条记录可展开审核详情。</p>
+				${renderFriendRows(rows, csrfToken)}
 			</section>
 		`,
 		{ csrfToken },

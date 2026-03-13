@@ -636,6 +636,92 @@ export const adminSharedStyles = `
 			padding: 1rem 1.05rem 1.05rem;
 		}
 
+		.friend-review-item {
+			padding: 0;
+		}
+
+		.friend-review-summary {
+			list-style: none;
+			cursor: pointer;
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 0.9rem;
+			padding: 1rem 1.05rem;
+		}
+
+		.friend-review-summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.friend-review-summary::marker {
+			content: "";
+		}
+
+		.friend-review-summary-main {
+			min-width: 0;
+			flex: 1;
+		}
+
+		.friend-review-summary-extra {
+			min-width: min(42%, 20rem);
+			display: grid;
+			gap: 0.48rem;
+			justify-items: end;
+			align-content: start;
+		}
+
+		.friend-review-summary-site {
+			margin: 0;
+			color: var(--text-secondary);
+			font-size: 0.84rem;
+			line-height: 1.45;
+			word-break: break-all;
+			text-align: right;
+		}
+
+		.friend-review-summary-state {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.56rem;
+		}
+
+		.friend-review-summary-caret {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 1.2rem;
+			height: 1.2rem;
+			border-radius: 999px;
+			border: 1px solid var(--border);
+			color: var(--text-muted);
+			font-size: 0.72rem;
+			line-height: 1;
+			transition:
+				transform var(--transition-fast),
+				border-color var(--transition-fast),
+				color var(--transition-fast);
+		}
+
+		.friend-review-summary-caret::before {
+			content: "▾";
+		}
+
+		.friend-review-item[open] .friend-review-summary {
+			background: rgba(10, 132, 255, 0.06);
+			border-bottom: 1px solid var(--border);
+		}
+
+		.friend-review-item[open] .friend-review-summary-caret {
+			color: var(--accent);
+			border-color: rgba(10, 132, 255, 0.4);
+			transform: rotate(180deg);
+		}
+
+		.friend-review-content {
+			padding: 0.95rem 1.05rem 1.05rem;
+		}
+
 		.review-card-header {
 			display: flex;
 			align-items: flex-start;
@@ -1245,6 +1331,20 @@ export const adminSharedStyles = `
 			.review-card-body {
 				grid-template-columns: 1fr;
 			}
+
+			.friend-review-summary {
+				flex-direction: column;
+				align-items: flex-start;
+			}
+
+			.friend-review-summary-extra {
+				width: 100%;
+				justify-items: start;
+			}
+
+			.friend-review-summary-site {
+				text-align: left;
+			}
 		}
 
 		@media (max-width: 720px) {
@@ -1284,6 +1384,10 @@ export const adminSharedStyles = `
 			.markdown-editor-shell .form-textarea,
 			.markdown-preview-body {
 				min-height: 300px;
+			}
+
+			.appearance-inline-grid {
+				grid-template-columns: 1fr;
 			}
 		}
 `;
