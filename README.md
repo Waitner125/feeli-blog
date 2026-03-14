@@ -99,6 +99,8 @@ npm run hash:password -- 你的密码
 | `AUTO_DEPLOY_WEBHOOK_SECRET` | Secret | 否 | Cloudflare Secret | 可选，部署钩子鉴权令牌（请求头 `x-deploy-token`） |
 | `MCP_BEARER_TOKEN` | Secret | 否 | Cloudflare Secret | 可选，对外 MCP 端点 `/api/mcp` 的 Bearer 鉴权令牌 |
 | `MCP_RATE_LIMIT_PER_MINUTE` | Variable | 否 | Cloudflare Variable | 可选，MCP 每分钟每 IP 限流，默认 `30` |
+| `MCP_AUTH_FAIL_LIMIT_PER_MINUTE` | Variable | 否 | Cloudflare Variable | 可选，MCP 鉴权失败每分钟每 IP 上限，默认 `20` |
+| `MCP_AUTH_BLOCK_SECONDS` | Variable | 否 | Cloudflare Variable | 可选，触发鉴权失败封禁后的封禁秒数，默认 `300` |
 | `SITE_NAME` | Variable | 建议 | Cloudflare Variable | 站点名称 |
 | `SITE_URL` | Variable | 建议 | Cloudflare Variable | 站点主域名 |
 
@@ -170,6 +172,7 @@ npm run hash:password -- 你的密码
 - 安全策略：
   - 若未配置 `MCP_BEARER_TOKEN` 或鉴权失败，端点统一返回 `404 Not Found`，降低被扫描识别价值。
   - 默认启用每分钟每 IP 限流（可通过 `MCP_RATE_LIMIT_PER_MINUTE` 调整）。
+  - 对错误 Bearer 进行按 IP 失败计数，超过阈值后临时封禁（`MCP_AUTH_FAIL_LIMIT_PER_MINUTE` / `MCP_AUTH_BLOCK_SECONDS`）。
 
 ## 部署前检查
 

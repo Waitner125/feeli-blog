@@ -29,6 +29,8 @@ interface Env {
 	PUBLIC_AI_DAILY_LIMIT_PER_IP?: string;
 	MCP_BEARER_TOKEN?: string;
 	MCP_RATE_LIMIT_PER_MINUTE?: string;
+	MCP_AUTH_FAIL_LIMIT_PER_MINUTE?: string;
+	MCP_AUTH_BLOCK_SECONDS?: string;
 }
 
 declare namespace App {

@@ -37,6 +37,8 @@ const MAX_FEATURED_IMAGE_KEY_LENGTH = 255;
 const MAX_FEATURED_IMAGE_ALT_LENGTH = 200;
 
 const DEFAULT_MCP_RATE_LIMIT_PER_MINUTE = 30;
+const DEFAULT_MCP_AUTH_FAIL_LIMIT_PER_MINUTE = 20;
+const DEFAULT_MCP_AUTH_BLOCK_SECONDS = 300;
 const MCP_SESSION_IDLE_TTL_MS = 30 * 60 * 1000;
 
 interface CreatePostInput {
@@ -152,6 +154,15 @@ function getMinuteRateKey(ip: string): string {
 	return `mcp:minute:${ip}:${currentMinute}`;
 }
 
+function getAuthFailMinuteRateKey(ip: string): string {
+	const currentMinute = Math.floor(Date.now() / 60_000);
+	return `mcp:auth-fail:minute:${ip}:${currentMinute}`;
+}
+
+function getAuthBlockKey(ip: string): string {
+	return `mcp:auth:block:${ip}`;
+}
+
 async function incrementKvCounter(
 	kv: KVNamespace,
 	key: string,
@@ -190,6 +201,39 @@ async function checkRateBudget(c: Context<AdminAppEnv>, ip: string) {
 	return {
 		ok: true as const,
 	};
+}
+
+async function isAuthBlocked(c: Context<AdminAppEnv>, ip: string) {
+	const blocked = await c.env.SESSION.get(getAuthBlockKey(ip));
+	return Boolean(blocked);
+}
+
+async function recordAuthFailure(c: Context<AdminAppEnv>, ip: string) {
+	const failLimitPerMinute = parseLimit(
+		c.env.MCP_AUTH_FAIL_LIMIT_PER_MINUTE,
+		DEFAULT_MCP_AUTH_FAIL_LIMIT_PER_MINUTE,
+		1,
+		600,
+	);
+	const blockSeconds = parseLimit(
+		c.env.MCP_AUTH_BLOCK_SECONDS,
+		DEFAULT_MCP_AUTH_BLOCK_SECONDS,
+		60,
+		86_400,
+	);
+	const failureCount = await incrementKvCounter(
+		c.env.SESSION,
+		getAuthFailMinuteRateKey(ip),
+		120,
+	);
+
+	if (failureCount <= failLimitPerMinute) {
+		return;
+	}
+
+	await c.env.SESSION.put(getAuthBlockKey(ip), "1", {
+		expirationTtl: blockSeconds,
+	});
 }
 
 function isPostPublic(
@@ -781,6 +825,12 @@ async function pruneExpiredMcpSessions() {
 
 mcpRoutes.all("/", async (c) => {
 	await pruneExpiredMcpSessions();
+	const ip = getClientIp(c);
+
+	const blocked = await isAuthBlocked(c, ip).catch(() => false);
+	if (blocked) {
+		return c.text("Not Found", 404);
+	}
 
 	const expectedToken = sanitizePlainText(c.env.MCP_BEARER_TOKEN, 500);
 	if (!expectedToken) {
@@ -789,10 +839,10 @@ mcpRoutes.all("/", async (c) => {
 
 	const providedToken = parseBearerToken(c.req.header("authorization"));
 	if (!providedToken || !timingSafeEqualText(providedToken, expectedToken)) {
+		await recordAuthFailure(c, ip).catch(() => undefined);
 		return c.text("Not Found", 404);
 	}
 
-	const ip = getClientIp(c);
 	const budget = await checkRateBudget(c, ip).catch(() => null);
 	if (!budget) {
 		return c.json(

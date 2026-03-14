@@ -15,6 +15,21 @@ const mockEnv = {
 	},
 } as unknown as Env;
 
+function createMemorySessionKv() {
+	const store = new Map<string, string>();
+	const kv = {
+		get: async (key: string) => store.get(key) ?? null,
+		put: async (key: string, value: string) => {
+			store.set(key, value);
+		},
+		delete: async (key: string) => {
+			store.delete(key);
+		},
+	} as unknown as KVNamespace;
+
+	return { kv, store };
+}
+
 function createMockD1() {
 	const calls: Array<{ sql: string; params: unknown[] }> = [];
 
@@ -406,6 +421,78 @@ describe("后台接口", () => {
 
 		assert.equal(res.status, 404);
 		assert.equal(await res.text(), "Not Found");
+	});
+
+	test("POST /mcp 鉴权失败超过阈值后会触发短时封禁", async () => {
+		const { kv, store } = createMemorySessionKv();
+		const initializeRequest = {
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {
+				protocolVersion: "2025-11-25",
+				clientInfo: {
+					name: "integration-test-client",
+					version: "1.0.0",
+				},
+				capabilities: {},
+			},
+		};
+		const authLimitEnv = {
+			...mockEnv,
+			SESSION: kv,
+			MCP_BEARER_TOKEN: "mcp-secret",
+			MCP_AUTH_FAIL_LIMIT_PER_MINUTE: "1",
+			MCP_AUTH_BLOCK_SECONDS: "300",
+		} as unknown as Env;
+
+		const firstRes = await app.request(
+			"/mcp",
+			{
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					authorization: "Bearer wrong-token",
+				},
+				body: JSON.stringify(initializeRequest),
+			},
+			authLimitEnv,
+		);
+		assert.equal(firstRes.status, 404);
+
+		const secondRes = await app.request(
+			"/mcp",
+			{
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					authorization: "Bearer wrong-token",
+				},
+				body: JSON.stringify(initializeRequest),
+			},
+			authLimitEnv,
+		);
+		assert.equal(secondRes.status, 404);
+
+		const authBlockKey = [...store.keys()].find((key) =>
+			key.startsWith("mcp:auth:block:"),
+		);
+		assert.ok(authBlockKey);
+
+		const blockedRes = await app.request(
+			"/mcp",
+			{
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					authorization: "Bearer mcp-secret",
+				},
+				body: JSON.stringify(initializeRequest),
+			},
+			authLimitEnv,
+		);
+		assert.equal(blockedRes.status, 404);
+		assert.equal(await blockedRes.text(), "Not Found");
 	});
 
 	test("POST /mcp 在 create_post 缺少 authorName 时返回工具错误", async () => {
