@@ -6,6 +6,7 @@ import {
 	escapeAttribute,
 	escapeHtml,
 	parseOptionalPositiveInt,
+	sanitizeCanonicalUrl,
 	sanitizePlainText,
 } from "@/lib/security";
 import {
@@ -40,6 +41,17 @@ interface FriendLinkRow {
 	reviewNote: string | null;
 	reviewedAt: string | null;
 	createdAt: string;
+}
+
+interface FriendLinkCreateInput {
+	name: string;
+	siteUrl: string;
+	avatarUrl: string | null;
+	description: string;
+	contact: string;
+	note: string | null;
+	status: FriendLinkStatus;
+	reviewNote: string | null;
 }
 
 function normalizeFriendLinkStatus(value: unknown): FriendLinkStatus | null {
@@ -81,15 +93,70 @@ function resolveAlert(
 			return { type: "success", message: "友链状态已更新" };
 		case "deleted":
 			return { type: "success", message: "友链记录已删除" };
+		case "created":
+			return { type: "success", message: "友链已添加，可立即在列表中管理" };
 		case "invalid-id":
 			return { type: "error", message: "友链 ID 不合法" };
 		case "invalid-status":
 			return { type: "error", message: "友链状态不合法" };
+		case "create-invalid":
+			return { type: "error", message: "新增友链参数不完整或格式无效" };
+		case "create-duplicate":
+			return { type: "error", message: "该站点地址已存在，无法重复添加" };
 		case "csrf-failed":
 			return { type: "error", message: "CSRF 校验失败，请刷新页面后重试" };
 		default:
 			return undefined;
 	}
+}
+
+function parseFriendCreateInput(
+	body: Record<string, unknown>,
+): { data: FriendLinkCreateInput } | { error: "invalid" } {
+	const name = sanitizePlainText(getBodyText(body, "createName"), 80);
+	const siteUrl = sanitizeCanonicalUrl(getBodyText(body, "createSiteUrl"));
+	const rawAvatarUrl = getBodyText(body, "createAvatarUrl");
+	const avatarUrl = rawAvatarUrl ? sanitizeCanonicalUrl(rawAvatarUrl) : null;
+	const description = sanitizePlainText(
+		getBodyText(body, "createDescription"),
+		320,
+		{ allowNewlines: true },
+	);
+	const contact = sanitizePlainText(getBodyText(body, "createContact"), 120, {
+		allowNewlines: true,
+	});
+	const note =
+		sanitizePlainText(getBodyText(body, "createNote"), 320, {
+			allowNewlines: true,
+		}) || null;
+	const reviewNote =
+		sanitizePlainText(getBodyText(body, "createReviewNote"), 320, {
+			allowNewlines: true,
+		}) || null;
+	const status = normalizeFriendLinkStatus(
+		getBodyText(body, "createStatus") || "approved",
+	);
+
+	if (!name || !siteUrl || !description || !contact || !status) {
+		return { error: "invalid" };
+	}
+
+	if (rawAvatarUrl && !avatarUrl) {
+		return { error: "invalid" };
+	}
+
+	return {
+		data: {
+			name,
+			siteUrl,
+			avatarUrl,
+			description,
+			contact,
+			note,
+			status,
+			reviewNote,
+		},
+	};
 }
 
 function formatDateTime(value: string | null | undefined): string {
@@ -198,6 +265,69 @@ function renderFriendRows(rows: FriendLinkRow[], csrfToken: string) {
 		.join("");
 }
 
+function renderCreateForm(csrfToken: string): string {
+	const createStatusOptions: FriendLinkStatus[] = [
+		"approved",
+		"pending",
+		"offline",
+		"rejected",
+	];
+
+	return `
+		<section id="friend-create-form" class="appearance-panel review-card">
+			<h2 style="margin-bottom: 0.35rem;">新增友链</h2>
+			<p class="form-help" style="margin-bottom: 0.9rem;">直接在后台录入并设置状态，不需要前台申请。</p>
+			<form method="post" action="/api/admin/friends/create">
+				<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
+				<div class="appearance-inline-grid">
+					<div class="form-group">
+						<label for="createName">站点名称</label>
+						<input id="createName" name="createName" class="form-input" maxlength="80" required />
+					</div>
+					<div class="form-group">
+						<label for="createSiteUrl">站点地址</label>
+						<input id="createSiteUrl" name="createSiteUrl" class="form-input" type="url" maxlength="320" placeholder="https://example.com" required />
+					</div>
+					<div class="form-group">
+						<label for="createAvatarUrl">头像地址（可选）</label>
+						<input id="createAvatarUrl" name="createAvatarUrl" class="form-input" type="url" maxlength="320" placeholder="https://example.com/avatar.png" />
+					</div>
+					<div class="form-group">
+						<label for="createContact">联系方式</label>
+						<input id="createContact" name="createContact" class="form-input" maxlength="120" placeholder="邮箱 / X / Telegram" required />
+					</div>
+					<div class="form-group">
+						<label for="createStatus">初始状态</label>
+						<select id="createStatus" name="createStatus" class="form-select">
+							${createStatusOptions
+								.map(
+									(value) =>
+										`<option value="${value}" ${value === "approved" ? "selected" : ""}>${escapeHtml(getFriendStatusLabel(value))}</option>`,
+								)
+								.join("")}
+						</select>
+					</div>
+					<div class="form-group">
+						<label for="createReviewNote">审核备注（可选）</label>
+						<input id="createReviewNote" name="createReviewNote" class="form-input" maxlength="320" placeholder="例如：后台手动添加" />
+					</div>
+					<div class="form-group" style="grid-column: 1 / -1;">
+						<label for="createDescription">站点简介</label>
+						<textarea id="createDescription" name="createDescription" class="form-textarea" maxlength="320" rows="3" required></textarea>
+					</div>
+					<div class="form-group" style="grid-column: 1 / -1;">
+						<label for="createNote">站长备注（可选）</label>
+						<textarea id="createNote" name="createNote" class="form-textarea" maxlength="320" rows="3"></textarea>
+					</div>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">添加友链</button>
+				</div>
+			</form>
+		</section>
+	`;
+}
+
 function renderFriendsPage(options: {
 	rows: FriendLinkRow[];
 	csrfToken: string;
@@ -210,8 +340,12 @@ function renderFriendsPage(options: {
 		"友链管理",
 		`
 			<h1>友链管理</h1>
-			<p class="form-help" style="margin-bottom: 1rem;">审核前台友链申请，支持通过、拒绝、下架与删除记录。</p>
+			<p class="form-help" style="margin-bottom: 1rem;">支持后台直接新增友链，也支持审核前台申请并管理状态。</p>
 			${alert ? `<div class="alert alert-${escapeAttribute(alert.type)}">${escapeHtml(alert.message)}</div>` : ""}
+			<div class="page-actions">
+				<a href="#friend-create-form" class="btn btn-primary">添加友链</a>
+			</div>
+			${renderCreateForm(csrfToken)}
 
 			<section>
 				<h2 style="margin-bottom: 0.2rem;">申请列表</h2>
@@ -242,6 +376,46 @@ friendsRoutes.get("/", async (c) => {
 			alert: resolveAlert(status),
 		}),
 	);
+});
+
+friendsRoutes.post("/create", async (c) => {
+	const session = getAuthenticatedSession(c);
+	const body = await c.req.parseBody();
+	if (!assertCsrfToken(getBodyText(body, "_csrf"), session)) {
+		return c.redirect("/api/admin/friends?status=csrf-failed");
+	}
+
+	const parsed = parseFriendCreateInput(body);
+	if ("error" in parsed) {
+		return c.redirect("/api/admin/friends?status=create-invalid");
+	}
+
+	const db = getDb(c.env.DB);
+	const [existing] = await db
+		.select({ id: friendLinks.id })
+		.from(friendLinks)
+		.where(eq(friendLinks.siteUrl, parsed.data.siteUrl))
+		.limit(1);
+	if (existing) {
+		return c.redirect("/api/admin/friends?status=create-duplicate");
+	}
+
+	const now = new Date().toISOString();
+	await db.insert(friendLinks).values({
+		name: parsed.data.name,
+		siteUrl: parsed.data.siteUrl,
+		avatarUrl: parsed.data.avatarUrl,
+		description: parsed.data.description,
+		contact: parsed.data.contact,
+		note: parsed.data.note,
+		status: parsed.data.status,
+		reviewNote: parsed.data.reviewNote,
+		reviewedAt: parsed.data.status === "pending" ? null : now,
+		createdAt: now,
+		updatedAt: now,
+	});
+
+	return c.redirect("/api/admin/friends?status=created");
 });
 
 friendsRoutes.post("/:id/review", async (c) => {

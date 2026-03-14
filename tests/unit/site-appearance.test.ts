@@ -32,17 +32,17 @@ describe("站点外观设置", () => {
 			normalized.backgroundImageKey,
 			"appearance/background/2026-03-07/example.webp",
 		);
-		assert.equal(normalized.backgroundOpacity, 0);
-		assert.equal(normalized.backgroundBlur, 100);
+		assert.equal(normalized.backgroundOpacity, 20);
+		assert.equal(normalized.backgroundBlur, 60);
 		assert.equal(normalized.backgroundScale, 180);
 		assert.equal(normalized.backgroundPositionX, 0);
 		assert.equal(normalized.backgroundPositionY, 100);
-		assert.equal(normalized.heroCardOpacity, 0);
-		assert.equal(normalized.heroCardBlur, 100);
-		assert.equal(normalized.postCardOpacity, 100);
+		assert.equal(normalized.heroCardOpacity, 4);
+		assert.equal(normalized.heroCardBlur, 48);
+		assert.equal(normalized.postCardOpacity, 40);
 		assert.equal(normalized.postCardBlur, 0);
-		assert.equal(normalized.articlePanelOpacity, 100);
-		assert.equal(normalized.articlePanelBlur, 100);
+		assert.equal(normalized.articlePanelOpacity, 40);
+		assert.equal(normalized.articlePanelBlur, 48);
 	});
 
 	test("normalizeSiteAppearanceInput 会回退到默认值", () => {

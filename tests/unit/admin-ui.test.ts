@@ -196,20 +196,35 @@ describe("后台界面风格保护", () => {
 		assert.match(adminScriptSource, /右侧卡片图片上传成功/u);
 	});
 
-	test("外观页透明度与模糊参数统一 0-100，并绑定完整滑块监听", async () => {
+	test("外观页不透明度与模糊参数使用收紧区间，并绑定完整滑块监听", async () => {
 		const [appearanceSource, adminScriptSource] = await Promise.all([
 			readFile("src/admin/routes/appearance.ts", "utf8"),
 			readFile("public/admin.js", "utf8"),
 		]);
 
-		assert.match(appearanceSource, /背景透明度/u);
-		assert.match(appearanceSource, /id="backgroundOpacity"[\s\S]*min="0" max="100"/u);
-		assert.match(appearanceSource, /id="heroCardOpacity"[\s\S]*min="0" max="100"/u);
-		assert.match(appearanceSource, /id="articlePanelOpacity"[\s\S]*min="0" max="100"/u);
-		assert.match(appearanceSource, /id="backgroundBlur"[\s\S]*min="0" max="100"/u);
-		assert.match(appearanceSource, /id="heroCardBlur"[\s\S]*min="0" max="100"/u);
-		assert.match(appearanceSource, /id="articlePanelBlur"[\s\S]*min="0" max="100"/u);
-		assert.match(appearanceSource, /convertTransparencyToOpacity/u);
+		assert.match(appearanceSource, /背景不透明度/u);
+		assert.match(
+			appearanceSource,
+			/id="backgroundOpacity"[\s\S]*min="20" max="100"/u,
+		);
+		assert.match(
+			appearanceSource,
+			/id="heroCardOpacity"[\s\S]*min="4" max="40"/u,
+		);
+		assert.match(
+			appearanceSource,
+			/id="articlePanelOpacity"[\s\S]*min="4" max="40"/u,
+		);
+		assert.match(
+			appearanceSource,
+			/id="backgroundBlur"[\s\S]*min="0" max="60"/u,
+		);
+		assert.match(appearanceSource, /id="heroCardBlur"[\s\S]*min="0" max="48"/u);
+		assert.match(
+			appearanceSource,
+			/id="articlePanelBlur"[\s\S]*min="0" max="48"/u,
+		);
+		assert.doesNotMatch(appearanceSource, /convertTransparencyToOpacity/u);
 
 		assert.ok(
 			adminScriptSource.includes(
