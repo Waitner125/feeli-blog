@@ -183,8 +183,12 @@ describe("源码回归保护", () => {
 		assert.ok(scriptSource.includes("prose-code-block"));
 		assert.ok(scriptSource.includes("prose-code-head"));
 		assert.ok(scriptSource.includes("prose-code-copy"));
+		assert.ok(scriptSource.includes("code-window-dot-close"));
+		assert.ok(scriptSource.includes("code-window-dot-minimize"));
+		assert.ok(scriptSource.includes("code-window-dot-zoom"));
 		assert.ok(scriptSource.includes("language-"));
 		assert.ok(globalStyleSource.includes(".prose .prose-code-head"));
+		assert.ok(globalStyleSource.includes(".prose .code-window-dot"));
 		assert.ok(globalStyleSource.includes(".prose .prose-code-copy"));
 		assert.ok(globalStyleSource.includes(".prose .prose-code-block pre"));
 	});

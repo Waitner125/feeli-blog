@@ -137,6 +137,13 @@
 		const dots = document.createElement("span");
 		dots.className = "code-window-dots";
 		dots.setAttribute("aria-hidden", "true");
+		const closeDot = document.createElement("span");
+		closeDot.className = "code-window-dot code-window-dot-close";
+		const minimizeDot = document.createElement("span");
+		minimizeDot.className = "code-window-dot code-window-dot-minimize";
+		const zoomDot = document.createElement("span");
+		zoomDot.className = "code-window-dot code-window-dot-zoom";
+		dots.append(closeDot, minimizeDot, zoomDot);
 		return dots;
 	};
 
