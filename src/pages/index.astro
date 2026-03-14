@@ -91,7 +91,7 @@ const latestUpdate = latestUpdateAt
 	: "等待第一篇正式发布的文章";
 const recentSectionSubheading =
 	pinnedPosts.length > 0
-		? "置顶文章固定展示在上方，本区仅显示非置顶的最近发布内容。"
+		? "展示最近发布的内容，完整文章请前往归档页查看。"
 		: "保留最近发布的文章，首页只做精选入口，完整内容请进入归档页查看。";
 const heroActions = buildHeroActionLinks(homepageAppearance);
 
@@ -225,7 +225,7 @@ function isInternalHref(href: string) {
 						<h2 class="section-heading">置顶文章</h2>
 					</div>
 					<p class="section-subheading">
-						可在后台编辑文章时勾选“首页置顶”，并用顺序值控制展示先后。
+						展示重点推荐内容。
 					</p>
 				</section>
 
