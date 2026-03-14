@@ -24,7 +24,6 @@
 	 * 正确做法：将 backdrop-filter 与 background 直接应用在卡片本身。
 	 * 现代 Chrome 可正确从卡片背后的合成层取样，不会产生合成层隔断问题。
 	 */
-	background: rgba(var(--card-surface-rgb), var(--post-card-surface-alpha));
 	backdrop-filter: blur(var(--post-card-blur-effective)) saturate(145%);
 	-webkit-backdrop-filter: blur(var(--post-card-blur-effective)) saturate(145%);
 	opacity: 0;
@@ -319,4 +318,12 @@
 		transform: none;
 		opacity: 1;
 	}
+}
+
+/*
+ * 双类选择器（特异性 0-2-0）覆盖 global.css .glass-panel { background: transparent }（0-1-0），
+ * 确保 PostCard 的半透明背景不被更低特异性的 glass-panel 规则重置。
+ */
+.post-card.glass-panel {
+	background: rgba(var(--card-surface-rgb), calc(var(--post-card-opacity, 14) / 100));
 }
