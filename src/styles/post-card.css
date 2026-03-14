@@ -327,3 +327,13 @@
 .post-card.glass-panel {
 	background: rgba(var(--card-surface-rgb), calc(var(--post-card-opacity, 14) / 100));
 }
+
+/*
+ * 双类选择器（特异性 0-2-1）覆盖 global.css .glass-panel::after { backdrop-filter: blur(...) }（0-1-1）。
+ * ::after 专用于 hover 闪光动画，不需要 backdrop-filter，
+ * 否则 hover 时会对卡片内容产生意外模糊。
+ */
+.post-card.glass-panel::after {
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
