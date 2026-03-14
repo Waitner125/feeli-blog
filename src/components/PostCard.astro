@@ -42,7 +42,7 @@ const cardClassName = [
 ].join(" ");
 ---
 
-<article class={cardClassName} transition:name={`card-${slug}`}>
+<article class={cardClassName}>
 	{hasCover && (
 		<a href={`/blog/${slug}`} class="post-card-cover">
 			<img src={coverImageUrl} alt={coverImageAlt} loading="lazy" decoding="async" />
