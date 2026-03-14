@@ -184,8 +184,6 @@ const tocEntries = (toc ?? [])
 	}
 
 	.article-sidebar {
-		position: sticky;
-		top: 6.2rem;
 		display: grid;
 		gap: 0.8rem;
 	}
@@ -278,6 +276,11 @@ const tocEntries = (toc ?? [])
 		display: grid;
 		gap: 0.9rem;
 		padding: 1rem;
+		position: sticky;
+		top: 6.2rem;
+		max-height: calc(100vh - 7.2rem);
+		overflow: auto;
+		overscroll-behavior: contain;
 	}
 
 	.article-toc-head {
@@ -469,6 +472,13 @@ const tocEntries = (toc ?? [])
 			position: static;
 			top: auto;
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.article-toc {
+			position: static;
+			top: auto;
+			max-height: none;
+			overflow: visible;
 		}
 
 		.article-profile-avatar-frame {

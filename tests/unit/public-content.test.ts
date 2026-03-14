@@ -170,6 +170,14 @@ describe("源码回归保护", () => {
 		assert.ok(postLayoutSource.includes("article-transparency-toggle-compact"));
 		assert.ok(postLayoutSource.includes("/article-transparency-toggle.js"));
 		assert.ok(postLayoutSource.includes("article-opaque-mode"));
+		assert.match(
+			postLayoutSource,
+			/\.article-toc\s*\{[^}]*position:\s*sticky/u,
+		);
+		assert.doesNotMatch(
+			postLayoutSource,
+			/\.article-sidebar\s*\{[^}]*position:\s*sticky/u,
+		);
 		assert.ok(postLayoutSource.includes("orientation: portrait"));
 		assert.ok(postPageSource.includes("articleSidebarAvatarPath"));
 		assert.ok(postPageSource.includes("getSiteAppearance"));
