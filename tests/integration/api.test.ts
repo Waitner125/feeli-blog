@@ -502,6 +502,53 @@ describe("后台接口", () => {
 		assert.equal(await res.text(), "Not Found");
 	});
 
+	test("POST /mcp 鉴权失败触发 404 时会写入 MCP 审计日志", async () => {
+		const { db, calls } = createMcpReadMockD1();
+		const initializeRequest = {
+			jsonrpc: "2.0",
+			id: 1,
+			method: "initialize",
+			params: {
+				protocolVersion: "2025-11-25",
+				clientInfo: {
+					name: "integration-test-client",
+					version: "1.0.0",
+				},
+				capabilities: {},
+			},
+		};
+
+		const res = await app.request(
+			"/mcp",
+			{
+				method: "POST",
+				headers: {
+					accept: "application/json, text/event-stream",
+					"content-type": "application/json",
+					authorization: "Bearer invalid-token",
+					"CF-Connecting-IP": "198.51.100.7",
+				},
+				body: JSON.stringify(initializeRequest),
+			},
+			{
+				...mockEnv,
+				DB: db,
+				MCP_BEARER_TOKEN: "mcp-secret",
+			} as unknown as Env,
+		);
+
+		assert.equal(res.status, 404);
+		assert.equal(await res.text(), "Not Found");
+
+		const auditInsertCall = calls.find((entry) =>
+			/insert into\s+"?mcp_audit_logs"?/iu.test(entry.sql),
+		);
+		assert.ok(auditInsertCall);
+		assert.ok(auditInsertCall?.params.includes("token_invalid"));
+		assert.ok(auditInsertCall?.params.includes("not_found"));
+		assert.ok(auditInsertCall?.params.includes(404));
+	});
+
 	test("POST /mcp 在后台关闭开关时返回 404", async () => {
 		const { db } = createMcpReadMockD1({ mcpEnabled: false });
 		const initializeRequest = {
@@ -781,6 +828,17 @@ describe("后台接口", () => {
 		assert.ok(insertCall);
 		assert.ok(insertCall?.params.includes("AI-Agent"));
 		assert.ok(insertCall?.params.includes("published"));
+
+		const auditInsertCalls = calls.filter((entry) =>
+			/insert into\s+"?mcp_audit_logs"?/iu.test(entry.sql),
+		);
+		assert.ok(auditInsertCalls.length >= 2);
+		const toolAuditCall = auditInsertCalls.find((entry) =>
+			entry.params.includes("create_post"),
+		);
+		assert.ok(toolAuditCall);
+		assert.ok(toolAuditCall?.params.includes("tools/call"));
+		assert.ok(toolAuditCall?.params.includes("success"));
 	});
 
 	test("POST /mcp 在 create_post 使用摘要/分类/标签/SEO别名时可写入数据库", async () => {

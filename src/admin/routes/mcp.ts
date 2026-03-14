@@ -10,6 +10,7 @@ import {
 	blogPosts,
 	blogPostTags,
 	blogTags,
+	mcpAuditLogs,
 	siteAppearanceSettings,
 } from "@/db/schema";
 import { getDb } from "@/lib/db";
@@ -131,6 +132,44 @@ interface McpSessionState {
 	updatedAt: number;
 }
 
+interface McpJsonRpcMeta {
+	mcpMethod: string | null;
+	toolName: string | null;
+	requestId: string | null;
+}
+
+type McpAuditAuthState =
+	| "disabled"
+	| "blocked"
+	| "token_missing"
+	| "token_invalid"
+	| "authorized";
+
+type McpAuditOutcome =
+	| "not_found"
+	| "invalid_request"
+	| "rate_limited"
+	| "rate_limiter_error"
+	| "success"
+	| "session_error"
+	| "internal_error"
+	| "method_not_allowed";
+
+interface McpAuditLogInput {
+	ip: string;
+	requestMethod: string;
+	requestPath: string;
+	sessionId: string | null;
+	responseStatus: number;
+	authState: McpAuditAuthState;
+	outcome: McpAuditOutcome;
+	mcpMethod?: string | null;
+	toolName?: string | null;
+	requestId?: string | null;
+	detail?: string | null;
+	userAgent?: string | null;
+}
+
 const mcpSessions = new Map<string, McpSessionState>();
 
 function buildJsonRpcErrorPayload(code: number, message: string) {
@@ -173,6 +212,80 @@ function parseBearerToken(headerValue: string | undefined): string | null {
 
 	const token = sanitizePlainText(match[1], 500, { trim: true });
 	return token || null;
+}
+
+function parseMcpJsonRpcMeta(body: unknown): McpJsonRpcMeta {
+	const candidate =
+		Array.isArray(body) &&
+		body.length > 0 &&
+		body[0] &&
+		typeof body[0] === "object"
+			? body[0]
+			: body;
+	if (!candidate || typeof candidate !== "object") {
+		return {
+			mcpMethod: null,
+			toolName: null,
+			requestId: null,
+		};
+	}
+
+	const requestRecord = candidate as Record<string, unknown>;
+	const method = sanitizePlainText(requestRecord.method, 80);
+	const params =
+		requestRecord.params && typeof requestRecord.params === "object"
+			? (requestRecord.params as Record<string, unknown>)
+			: null;
+	const toolName =
+		method === "tools/call"
+			? sanitizePlainText(params?.name, 120) || null
+			: null;
+
+	const rawId = requestRecord.id;
+	const requestId =
+		typeof rawId === "number"
+			? sanitizePlainText(String(rawId), 120) || null
+			: sanitizePlainText(rawId, 120) || null;
+
+	return {
+		mcpMethod: method || null,
+		toolName,
+		requestId,
+	};
+}
+
+function getRequestPath(c: Context<AdminAppEnv>): string {
+	const parsedUrl = new URL(c.req.url);
+	const path = sanitizePlainText(parsedUrl.pathname, 255);
+	return path || "/mcp";
+}
+
+async function recordMcpAuditLog(
+	env: Env,
+	input: McpAuditLogInput,
+): Promise<void> {
+	try {
+		const db = getDb(env.DB);
+		await db.insert(mcpAuditLogs).values({
+			ipAddress: sanitizePlainText(input.ip, 64) || "unknown",
+			requestMethod: sanitizePlainText(input.requestMethod, 16) || "UNKNOWN",
+			requestPath: sanitizePlainText(input.requestPath, 255) || "/mcp",
+			sessionId: sanitizePlainText(input.sessionId, 128) || null,
+			authState: sanitizePlainText(input.authState, 40) || "authorized",
+			responseStatus: Number.isFinite(input.responseStatus)
+				? Math.max(100, Math.min(599, input.responseStatus))
+				: 500,
+			outcome: sanitizePlainText(input.outcome, 64) || "internal_error",
+			mcpMethod: sanitizePlainText(input.mcpMethod, 80) || null,
+			toolName: sanitizePlainText(input.toolName, 120) || null,
+			requestId: sanitizePlainText(input.requestId, 120) || null,
+			detail: sanitizePlainText(input.detail, 500) || null,
+			userAgent: sanitizePlainText(input.userAgent, 500) || null,
+			timestamp: new Date().toISOString(),
+		});
+	} catch {
+		// 审计日志写入失败不应影响 MCP 主流程可用性
+	}
 }
 
 function parseLimit(
@@ -1318,50 +1431,135 @@ async function isMcpFeatureEnabled(env: Env): Promise<boolean> {
 
 mcpRoutes.all("/", async (c) => {
 	await pruneExpiredMcpSessions();
+	const method = c.req.method.toUpperCase();
+	const requestPath = getRequestPath(c);
+	const sessionId = sanitizePlainText(c.req.header("mcp-session-id"), 128);
+	const userAgent = sanitizePlainText(c.req.header("user-agent"), 500) || null;
+	const ip = getClientIp(c);
+
 	const mcpEnabled = await isMcpFeatureEnabled(c.env);
 	if (!mcpEnabled) {
+		await recordMcpAuditLog(c.env, {
+			ip,
+			requestMethod: method,
+			requestPath,
+			sessionId,
+			responseStatus: 404,
+			authState: "disabled",
+			outcome: "not_found",
+			detail: "后台已关闭 MCP 接口",
+			userAgent,
+		});
 		return c.text("Not Found", 404);
 	}
-	const ip = getClientIp(c);
 
 	const blocked = await isAuthBlocked(c, ip).catch(() => false);
 	if (blocked) {
+		await recordMcpAuditLog(c.env, {
+			ip,
+			requestMethod: method,
+			requestPath,
+			sessionId,
+			responseStatus: 404,
+			authState: "blocked",
+			outcome: "not_found",
+			detail: "鉴权失败次数超限，处于封禁期",
+			userAgent,
+		});
 		return c.text("Not Found", 404);
 	}
 
 	const expectedToken = sanitizePlainText(c.env.MCP_BEARER_TOKEN, 500);
 	if (!expectedToken) {
+		await recordMcpAuditLog(c.env, {
+			ip,
+			requestMethod: method,
+			requestPath,
+			sessionId,
+			responseStatus: 404,
+			authState: "token_missing",
+			outcome: "not_found",
+			detail: "服务端未配置 MCP_BEARER_TOKEN",
+			userAgent,
+		});
 		return c.text("Not Found", 404);
 	}
 
 	const providedToken = parseBearerToken(c.req.header("authorization"));
 	if (!providedToken || !timingSafeEqualText(providedToken, expectedToken)) {
 		await recordAuthFailure(c, ip).catch(() => undefined);
+		await recordMcpAuditLog(c.env, {
+			ip,
+			requestMethod: method,
+			requestPath,
+			sessionId,
+			responseStatus: 404,
+			authState: "token_invalid",
+			outcome: "not_found",
+			detail: "缺少 Bearer 或 Bearer 校验失败",
+			userAgent,
+		});
 		return c.text("Not Found", 404);
 	}
 
 	const budget = await checkRateBudget(c, ip).catch(() => null);
 	if (!budget) {
+		await recordMcpAuditLog(c.env, {
+			ip,
+			requestMethod: method,
+			requestPath,
+			sessionId,
+			responseStatus: 503,
+			authState: "authorized",
+			outcome: "rate_limiter_error",
+			detail: "限流计数服务异常",
+			userAgent,
+		});
 		return c.json(
 			buildJsonRpcErrorPayload(-32002, "MCP 限流服务暂时不可用，请稍后再试"),
 			503,
 		);
 	}
 	if (!budget.ok) {
+		await recordMcpAuditLog(c.env, {
+			ip,
+			requestMethod: method,
+			requestPath,
+			sessionId,
+			responseStatus: budget.status,
+			authState: "authorized",
+			outcome: "rate_limited",
+			detail: budget.message,
+			userAgent,
+		});
 		return c.json(
 			buildJsonRpcErrorPayload(-32002, budget.message),
 			budget.status,
 		);
 	}
 
-	const method = c.req.method.toUpperCase();
-	const sessionId = sanitizePlainText(c.req.header("mcp-session-id"), 128);
-
 	if (method === "POST") {
 		let parsedBody: unknown;
+		let requestMeta: McpJsonRpcMeta = {
+			mcpMethod: null,
+			toolName: null,
+			requestId: null,
+		};
 		try {
 			parsedBody = await c.req.json();
+			requestMeta = parseMcpJsonRpcMeta(parsedBody);
 		} catch {
+			await recordMcpAuditLog(c.env, {
+				ip,
+				requestMethod: method,
+				requestPath,
+				sessionId,
+				responseStatus: 400,
+				authState: "authorized",
+				outcome: "invalid_request",
+				detail: "请求体不是合法 JSON",
+				userAgent,
+			});
 			return c.json(
 				buildJsonRpcErrorPayload(-32700, "请求体不是合法 JSON"),
 				400,
@@ -1373,6 +1571,20 @@ mcpRoutes.all("/", async (c) => {
 		if (sessionId) {
 			const existing = mcpSessions.get(sessionId);
 			if (!existing) {
+				await recordMcpAuditLog(c.env, {
+					ip,
+					requestMethod: method,
+					requestPath,
+					sessionId,
+					responseStatus: 404,
+					authState: "authorized",
+					outcome: "session_error",
+					mcpMethod: requestMeta.mcpMethod,
+					toolName: requestMeta.toolName,
+					requestId: requestMeta.requestId,
+					detail: "会话不存在或已过期",
+					userAgent,
+				});
 				return c.json(
 					buildJsonRpcErrorPayload(-32000, "无效会话，请重新发起 initialize"),
 					404,
@@ -1383,6 +1595,20 @@ mcpRoutes.all("/", async (c) => {
 			transport = existing.transport;
 		} else {
 			if (!isInitializeRequest(parsedBody)) {
+				await recordMcpAuditLog(c.env, {
+					ip,
+					requestMethod: method,
+					requestPath,
+					sessionId,
+					responseStatus: 400,
+					authState: "authorized",
+					outcome: "invalid_request",
+					mcpMethod: requestMeta.mcpMethod,
+					toolName: requestMeta.toolName,
+					requestId: requestMeta.requestId,
+					detail: "首次请求必须为 initialize",
+					userAgent,
+				});
 				return c.json(
 					buildJsonRpcErrorPayload(-32000, "首次请求必须为 initialize"),
 					400,
@@ -1416,11 +1642,46 @@ mcpRoutes.all("/", async (c) => {
 		}
 
 		try {
-			return await transport.handleRequest(c.req.raw, {
+			const response = await transport.handleRequest(c.req.raw, {
 				parsedBody,
 			});
+			await recordMcpAuditLog(c.env, {
+				ip,
+				requestMethod: method,
+				requestPath,
+				sessionId: sessionId || transport.sessionId || null,
+				responseStatus: response.status,
+				authState: "authorized",
+				outcome: "success",
+				mcpMethod: requestMeta.mcpMethod,
+				toolName: requestMeta.toolName,
+				requestId: requestMeta.requestId,
+				detail:
+					response.status >= 400
+						? `MCP POST 请求返回状态 ${response.status}`
+						: null,
+				userAgent,
+			});
+			return response;
 		} catch (error) {
 			console.error("[MCP] 处理 POST 请求失败", error);
+			await recordMcpAuditLog(c.env, {
+				ip,
+				requestMethod: method,
+				requestPath,
+				sessionId: sessionId || transport.sessionId || null,
+				responseStatus: 500,
+				authState: "authorized",
+				outcome: "internal_error",
+				mcpMethod: requestMeta.mcpMethod,
+				toolName: requestMeta.toolName,
+				requestId: requestMeta.requestId,
+				detail:
+					error instanceof Error
+						? sanitizePlainText(error.message, 500)
+						: "MCP POST 请求内部异常",
+				userAgent,
+			});
 			return c.json(
 				buildJsonRpcErrorPayload(-32603, "MCP 内部错误，请稍后重试"),
 				500,
@@ -1430,6 +1691,17 @@ mcpRoutes.all("/", async (c) => {
 
 	if (method === "GET" || method === "DELETE") {
 		if (!sessionId) {
+			await recordMcpAuditLog(c.env, {
+				ip,
+				requestMethod: method,
+				requestPath,
+				sessionId,
+				responseStatus: 400,
+				authState: "authorized",
+				outcome: "invalid_request",
+				detail: "缺少 mcp-session-id 请求头",
+				userAgent,
+			});
 			return c.json(
 				buildJsonRpcErrorPayload(-32000, "缺少 mcp-session-id 请求头"),
 				400,
@@ -1438,14 +1710,54 @@ mcpRoutes.all("/", async (c) => {
 
 		const existing = mcpSessions.get(sessionId);
 		if (!existing) {
+			await recordMcpAuditLog(c.env, {
+				ip,
+				requestMethod: method,
+				requestPath,
+				sessionId,
+				responseStatus: 404,
+				authState: "authorized",
+				outcome: "session_error",
+				detail: "会话不存在或已过期",
+				userAgent,
+			});
 			return c.json(buildJsonRpcErrorPayload(-32000, "无效会话"), 404);
 		}
 
 		existing.updatedAt = Date.now();
 		try {
-			return await existing.transport.handleRequest(c.req.raw);
+			const response = await existing.transport.handleRequest(c.req.raw);
+			await recordMcpAuditLog(c.env, {
+				ip,
+				requestMethod: method,
+				requestPath,
+				sessionId,
+				responseStatus: response.status,
+				authState: "authorized",
+				outcome: "success",
+				detail:
+					response.status >= 400
+						? `MCP ${method} 会话请求返回状态 ${response.status}`
+						: null,
+				userAgent,
+			});
+			return response;
 		} catch (error) {
 			console.error("[MCP] 处理会话请求失败", error);
+			await recordMcpAuditLog(c.env, {
+				ip,
+				requestMethod: method,
+				requestPath,
+				sessionId,
+				responseStatus: 500,
+				authState: "authorized",
+				outcome: "internal_error",
+				detail:
+					error instanceof Error
+						? sanitizePlainText(error.message, 500)
+						: "MCP 会话请求内部异常",
+				userAgent,
+			});
 			return c.json(
 				buildJsonRpcErrorPayload(-32603, "MCP 内部错误，请稍后重试"),
 				500,
@@ -1453,6 +1765,17 @@ mcpRoutes.all("/", async (c) => {
 		}
 	}
 
+	await recordMcpAuditLog(c.env, {
+		ip,
+		requestMethod: method,
+		requestPath,
+		sessionId,
+		responseStatus: 405,
+		authState: "authorized",
+		outcome: "method_not_allowed",
+		detail: `不支持的请求方法：${method}`,
+		userAgent,
+	});
 	return c.text("Method Not Allowed", 405);
 });
 

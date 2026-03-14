@@ -9,6 +9,7 @@ import {
 	blogTags,
 	friendLinks,
 	loginAttempts,
+	mcpAuditLogs,
 	siteAppearanceSettings,
 	webMentions,
 } from "../../src/db/schema";
@@ -109,6 +110,20 @@ describe("数据库结构", () => {
 		assert.ok(columns.includes("pageUrl"));
 		assert.ok(columns.includes("eventData"));
 		assert.ok(columns.includes("scrollDepth"));
+	});
+
+	test("mcpAuditLogs 表包含必要字段", () => {
+		const columns = Object.keys(mcpAuditLogs);
+		assert.ok(columns.includes("ipAddress"));
+		assert.ok(columns.includes("requestMethod"));
+		assert.ok(columns.includes("requestPath"));
+		assert.ok(columns.includes("authState"));
+		assert.ok(columns.includes("responseStatus"));
+		assert.ok(columns.includes("outcome"));
+		assert.ok(columns.includes("mcpMethod"));
+		assert.ok(columns.includes("toolName"));
+		assert.ok(columns.includes("detail"));
+		assert.ok(columns.includes("timestamp"));
 	});
 
 	test("loginAttempts 表包含必要字段", () => {

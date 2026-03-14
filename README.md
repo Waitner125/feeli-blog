@@ -177,6 +177,9 @@ npm run hash:password -- 你的密码
   - 默认启用每分钟每 IP 限流（可通过 `MCP_RATE_LIMIT_PER_MINUTE` 调整）。
   - 对错误 Bearer 进行按 IP 失败计数，超过阈值后临时封禁（`MCP_AUTH_FAIL_LIMIT_PER_MINUTE` / `MCP_AUTH_BLOCK_SECONDS`）。
   - 后台外观页提供 MCP 开关（`启用 MCP 接口（/api/mcp）`），关闭后端点统一返回 `404`。
+- MCP 审计：
+  - 后台 `统计` 页新增 **MCP 审计专栏**，会记录 MCP 全量请求（包含工具调用、限流、会话错误、扫描触发的 404）。
+  - `下载全部明细（JSON/JSONL）` 也会包含 `mcpLogs` / `mcp-audit` 记录，便于离线审计。
 
 ## 部署前检查
 

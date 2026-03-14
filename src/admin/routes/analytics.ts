@@ -4,7 +4,7 @@ import {
 	ANALYTICS_RETENTION_DAYS,
 	maybeCleanupAnalyticsData,
 } from "@/admin/lib/analytics-retention";
-import { analyticsEvents, analyticsSessions } from "@/db/schema";
+import { analyticsEvents, analyticsSessions, mcpAuditLogs } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { escapeAttribute, escapeHtml } from "@/lib/security";
 import {
@@ -19,6 +19,7 @@ const analytics = new Hono<AdminAppEnv>();
 const TOP_ITEMS_LIMIT = 10;
 const RECENT_EVENTS_PAGE_SIZE = 20;
 const RECENT_SESSIONS_PAGE_SIZE = 20;
+const RECENT_MCP_PAGE_SIZE = 30;
 
 type RecentSessionRow = {
 	ipAddress: string | null;
@@ -31,6 +32,21 @@ type RecentSessionRow = {
 type RecentEventRow = {
 	eventType: string;
 	pageUrl: string | null;
+	timestamp: string;
+};
+
+type RecentMcpAuditRow = {
+	ipAddress: string | null;
+	requestMethod: string;
+	requestPath: string;
+	sessionId: string | null;
+	authState: string;
+	responseStatus: number;
+	outcome: string;
+	mcpMethod: string | null;
+	toolName: string | null;
+	requestId: string | null;
+	detail: string | null;
 	timestamp: string;
 };
 
@@ -68,6 +84,23 @@ type FullEventRow = {
 	timestamp: string;
 };
 
+type FullMcpAuditRow = {
+	id: number;
+	ipAddress: string | null;
+	requestMethod: string;
+	requestPath: string;
+	sessionId: string | null;
+	authState: string;
+	responseStatus: number;
+	outcome: string;
+	mcpMethod: string | null;
+	toolName: string | null;
+	requestId: string | null;
+	detail: string | null;
+	userAgent: string | null;
+	timestamp: string;
+};
+
 function parsePageValue(value: string | undefined, fallback = 1) {
 	const parsed = Number.parseInt(String(value ?? ""), 10);
 	if (!Number.isFinite(parsed) || parsed < 1) {
@@ -79,7 +112,7 @@ function parsePageValue(value: string | undefined, fallback = 1) {
 
 function buildPageHref(
 	requestUrl: string,
-	paramKey: "eventsPage" | "sessionsPage",
+	paramKey: "eventsPage" | "sessionsPage" | "mcpPage",
 	page: number,
 ) {
 	const url = new URL(requestUrl);
@@ -90,7 +123,7 @@ function buildPageHref(
 
 function renderPagination(options: {
 	requestUrl: string;
-	paramKey: "eventsPage" | "sessionsPage";
+	paramKey: "eventsPage" | "sessionsPage" | "mcpPage";
 	current: number;
 	total: number;
 }) {
@@ -152,19 +185,25 @@ analytics.get("/", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const requestedEventsPage = parsePageValue(c.req.query("eventsPage"), 1);
 	const requestedSessionsPage = parsePageValue(c.req.query("sessionsPage"), 1);
+	const requestedMcpPage = parsePageValue(c.req.query("mcpPage"), 1);
 	const forceCleanup = c.req.query("cleanup") === "1";
 
 	const stats = {
 		totalSessions: 0,
 		totalPageViews: 0,
+		totalMcpRequests: 0,
+		totalMcpNotFound: 0,
 		topPages: [] as Array<{ pageUrl: string; views: number }>,
 		topReferrers: [] as Array<{ referrer: string; count: number }>,
 		recentSessions: [] as RecentSessionRow[],
 		recentEvents: [] as RecentEventRow[],
+		recentMcpLogs: [] as RecentMcpAuditRow[],
 		eventsPage: 1,
 		sessionsPage: 1,
+		mcpPage: 1,
 		totalEventPages: 1,
 		totalSessionPages: 1,
+		totalMcpPages: 1,
 		cleanupNotice: "",
 	};
 
@@ -174,7 +213,7 @@ analytics.get("/", async (c) => {
 			force: forceCleanup,
 		});
 		if (cleanup.ran) {
-			stats.cleanupNotice = `统计保留策略已执行：删除事件 ${cleanup.deletedEvents} 条，会话 ${cleanup.deletedSessions} 条（保留最近 ${ANALYTICS_RETENTION_DAYS} 天）`;
+			stats.cleanupNotice = `统计保留策略已执行：删除事件 ${cleanup.deletedEvents} 条，会话 ${cleanup.deletedSessions} 条，MCP 审计 ${cleanup.deletedMcpLogs} 条（保留最近 ${ANALYTICS_RETENTION_DAYS} 天）`;
 		}
 
 		const [sessionCount] = await db
@@ -187,6 +226,17 @@ analytics.get("/", async (c) => {
 			.from(analyticsEvents);
 		stats.totalPageViews = pageViewCount?.count ?? 0;
 
+		const [mcpRequestCount] = await db
+			.select({ count: sql<number>`count(*)` })
+			.from(mcpAuditLogs);
+		stats.totalMcpRequests = mcpRequestCount?.count ?? 0;
+
+		const [mcpNotFoundCount] = await db
+			.select({ count: sql<number>`count(*)` })
+			.from(mcpAuditLogs)
+			.where(sql`${mcpAuditLogs.responseStatus} = 404`);
+		stats.totalMcpNotFound = mcpNotFoundCount?.count ?? 0;
+
 		stats.totalEventPages = Math.max(
 			1,
 			Math.ceil(stats.totalPageViews / RECENT_EVENTS_PAGE_SIZE),
@@ -195,13 +245,19 @@ analytics.get("/", async (c) => {
 			1,
 			Math.ceil(stats.totalSessions / RECENT_SESSIONS_PAGE_SIZE),
 		);
+		stats.totalMcpPages = Math.max(
+			1,
+			Math.ceil(stats.totalMcpRequests / RECENT_MCP_PAGE_SIZE),
+		);
 		stats.eventsPage = Math.min(requestedEventsPage, stats.totalEventPages);
 		stats.sessionsPage = Math.min(
 			requestedSessionsPage,
 			stats.totalSessionPages,
 		);
+		stats.mcpPage = Math.min(requestedMcpPage, stats.totalMcpPages);
 		const eventsOffset = (stats.eventsPage - 1) * RECENT_EVENTS_PAGE_SIZE;
 		const sessionsOffset = (stats.sessionsPage - 1) * RECENT_SESSIONS_PAGE_SIZE;
+		const mcpOffset = (stats.mcpPage - 1) * RECENT_MCP_PAGE_SIZE;
 
 		stats.topPages = (await db
 			.select({
@@ -248,6 +304,26 @@ analytics.get("/", async (c) => {
 			.orderBy(desc(analyticsSessions.lastSeenAt))
 			.limit(RECENT_SESSIONS_PAGE_SIZE)
 			.offset(sessionsOffset);
+
+		stats.recentMcpLogs = await db
+			.select({
+				ipAddress: mcpAuditLogs.ipAddress,
+				requestMethod: mcpAuditLogs.requestMethod,
+				requestPath: mcpAuditLogs.requestPath,
+				sessionId: mcpAuditLogs.sessionId,
+				authState: mcpAuditLogs.authState,
+				responseStatus: mcpAuditLogs.responseStatus,
+				outcome: mcpAuditLogs.outcome,
+				mcpMethod: mcpAuditLogs.mcpMethod,
+				toolName: mcpAuditLogs.toolName,
+				requestId: mcpAuditLogs.requestId,
+				detail: mcpAuditLogs.detail,
+				timestamp: mcpAuditLogs.timestamp,
+			})
+			.from(mcpAuditLogs)
+			.orderBy(desc(mcpAuditLogs.timestamp))
+			.limit(RECENT_MCP_PAGE_SIZE)
+			.offset(mcpOffset);
 	} catch {
 		// D1 未绑定时回退为空统计
 	}
@@ -261,22 +337,30 @@ analytics.get("/", async (c) => {
 				<a href="/api/admin/analytics?cleanup=1" class="btn">清理 ${ANALYTICS_RETENTION_DAYS} 天前数据</a>
 			</div>
 		</div>
-		<p class="page-intro">这里集中查看页面访问、来源分布和最近事件。默认自动保留最近 ${ANALYTICS_RETENTION_DAYS} 天数据，避免日志无限增长。</p>
+			<p class="page-intro">这里集中查看页面访问、来源分布、最近事件与 MCP 审计。默认自动保留最近 ${ANALYTICS_RETENTION_DAYS} 天数据，避免日志无限增长。</p>
 		${
 			stats.cleanupNotice
 				? `<div class="alert alert-success">${escapeHtml(stats.cleanupNotice)}</div>`
 				: ""
 		}
-		<div class="stats-grid">
-			<div class="stat-card">
-				<span class="stat-value">${stats.totalSessions}</span>
-				<span class="stat-label">总会话数</span>
+			<div class="stats-grid">
+				<div class="stat-card">
+					<span class="stat-value">${stats.totalSessions}</span>
+					<span class="stat-label">总会话数</span>
+				</div>
+				<div class="stat-card">
+					<span class="stat-value">${stats.totalPageViews}</span>
+					<span class="stat-label">总事件数</span>
+				</div>
+				<div class="stat-card">
+					<span class="stat-value">${stats.totalMcpRequests}</span>
+					<span class="stat-label">MCP 请求总数</span>
+				</div>
+				<div class="stat-card">
+					<span class="stat-value">${stats.totalMcpNotFound}</span>
+					<span class="stat-label">MCP 404 次数</span>
+				</div>
 			</div>
-			<div class="stat-card">
-				<span class="stat-value">${stats.totalPageViews}</span>
-				<span class="stat-label">总事件数</span>
-			</div>
-		</div>
 
 		<h2>热门页面</h2>
 		${
@@ -290,22 +374,64 @@ analytics.get("/", async (c) => {
 				: "<p class='empty-state'>当前还没有页面访问数据。</p>"
 		}
 
-		<h2>来源站点</h2>
-		${
-			stats.topReferrers.length > 0
-				? `<div class="table-card"><table class="data-table">
-				<thead><tr><th>来源</th><th>次数</th></tr></thead>
+			<h2>来源站点</h2>
+			${
+				stats.topReferrers.length > 0
+					? `<div class="table-card"><table class="data-table">
+					<thead><tr><th>来源</th><th>次数</th></tr></thead>
 				<tbody>
 					${stats.topReferrers.map((r) => `<tr><td class="table-cell-break">${escapeHtml(r.referrer)}</td><td>${r.count}</td></tr>`).join("")}
 				</tbody>
-			</table></div>`
-				: "<p class='empty-state'>当前还没有来源统计数据。</p>"
-		}
+				</table></div>`
+					: "<p class='empty-state'>当前还没有来源统计数据。</p>"
+			}
 
-		<h2>最近会话（审计）</h2>
-		${
-			stats.recentSessions.length > 0
-				? `<div class="table-card"><table class="data-table">
+			<h2>MCP 审计专栏</h2>
+			<p class="form-help">会记录 MCP 全量请求，包括鉴权失败、扫描触发的 404、限流和工具调用详情。</p>
+			${
+				stats.recentMcpLogs.length > 0
+					? `<div class="table-card"><table class="data-table">
+					<thead><tr><th>时间</th><th>IP</th><th>请求</th><th>操作</th><th>结果</th><th>状态</th><th>备注</th></tr></thead>
+					<tbody>
+						${stats.recentMcpLogs
+							.map((log) => {
+								const operationLabel = escapeHtml(
+									log.toolName
+										? `${log.mcpMethod || "tools/call"}:${log.toolName}`
+										: log.mcpMethod || "-",
+								);
+								const resultLabel = escapeHtml(
+									`${log.authState} / ${log.outcome}`,
+								);
+								const requestLabel = escapeHtml(
+									`${log.requestMethod} ${log.requestPath}`,
+								);
+								const statusLabel = escapeHtml(String(log.responseStatus));
+								const note = [
+									log.requestId ? `requestId=${log.requestId}` : "",
+									log.sessionId ? `session=${log.sessionId}` : "",
+									log.detail || "",
+								]
+									.filter(Boolean)
+									.join(" | ");
+								return `<tr><td>${renderLocalTimeCell(log.timestamp)}</td><td>${escapeHtml(log.ipAddress || "-")}</td><td class="table-cell-break">${requestLabel}</td><td class="table-cell-break">${operationLabel}</td><td class="table-cell-break">${resultLabel}</td><td>${statusLabel}</td><td class="table-cell-break">${escapeHtml(note || "-")}</td></tr>`;
+							})
+							.join("")}
+					</tbody>
+				</table></div>
+				${renderPagination({
+					requestUrl: c.req.url,
+					paramKey: "mcpPage",
+					current: stats.mcpPage,
+					total: stats.totalMcpPages,
+				})}`
+					: "<p class='empty-state'>当前还没有 MCP 审计日志。</p>"
+			}
+
+			<h2>最近会话（审计）</h2>
+			${
+				stats.recentSessions.length > 0
+					? `<div class="table-card"><table class="data-table">
 				<thead><tr><th>IP</th><th>浏览器/设备</th><th>落地页</th><th>最后访问</th></tr></thead>
 				<tbody>
 					${stats.recentSessions
@@ -322,8 +448,8 @@ analytics.get("/", async (c) => {
 				current: stats.sessionsPage,
 				total: stats.totalSessionPages,
 			})}`
-				: "<p class='empty-state'>当前还没有会话审计数据。</p>"
-		}
+					: "<p class='empty-state'>当前还没有会话审计数据。</p>"
+			}
 
 		<h2>最近事件</h2>
 		${
@@ -394,6 +520,26 @@ analytics.get("/export", async (c) => {
 		.from(analyticsEvents)
 		.orderBy(desc(analyticsEvents.timestamp))) as FullEventRow[];
 
+	const mcpLogs = (await db
+		.select({
+			id: mcpAuditLogs.id,
+			ipAddress: mcpAuditLogs.ipAddress,
+			requestMethod: mcpAuditLogs.requestMethod,
+			requestPath: mcpAuditLogs.requestPath,
+			sessionId: mcpAuditLogs.sessionId,
+			authState: mcpAuditLogs.authState,
+			responseStatus: mcpAuditLogs.responseStatus,
+			outcome: mcpAuditLogs.outcome,
+			mcpMethod: mcpAuditLogs.mcpMethod,
+			toolName: mcpAuditLogs.toolName,
+			requestId: mcpAuditLogs.requestId,
+			detail: mcpAuditLogs.detail,
+			userAgent: mcpAuditLogs.userAgent,
+			timestamp: mcpAuditLogs.timestamp,
+		})
+		.from(mcpAuditLogs)
+		.orderBy(desc(mcpAuditLogs.timestamp))) as FullMcpAuditRow[];
+
 	const fileName = `analytics-export-${formatExportTimestamp()}.${format === "json" ? "json" : "jsonl"}`;
 	if (format === "json") {
 		const payload = JSON.stringify(
@@ -402,6 +548,7 @@ analytics.get("/export", async (c) => {
 				retentionDays: ANALYTICS_RETENTION_DAYS,
 				sessions,
 				events,
+				mcpLogs,
 			},
 			null,
 			2,
@@ -423,6 +570,7 @@ analytics.get("/export", async (c) => {
 			retentionDays: ANALYTICS_RETENTION_DAYS,
 			sessionsCount: sessions.length,
 			eventsCount: events.length,
+			mcpLogsCount: mcpLogs.length,
 		}),
 	];
 
@@ -431,6 +579,9 @@ analytics.get("/export", async (c) => {
 	}
 	for (const row of events) {
 		lines.push(JSON.stringify({ type: "event", ...row }));
+	}
+	for (const row of mcpLogs) {
+		lines.push(JSON.stringify({ type: "mcp-audit", ...row }));
 	}
 
 	return new Response(lines.join("\n"), {

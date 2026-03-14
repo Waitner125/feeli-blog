@@ -11,10 +11,14 @@ describe("访问统计后台能力保护", () => {
 
 		assert.match(analyticsRouteSource, /eventsPage/u);
 		assert.match(analyticsRouteSource, /sessionsPage/u);
+		assert.match(analyticsRouteSource, /mcpPage/u);
 		assert.match(analyticsRouteSource, /RECENT_EVENTS_PAGE_SIZE/u);
 		assert.match(analyticsRouteSource, /RECENT_SESSIONS_PAGE_SIZE/u);
+		assert.match(analyticsRouteSource, /RECENT_MCP_PAGE_SIZE/u);
 		assert.match(analyticsRouteSource, /cleanup=1/u);
 		assert.match(analyticsRouteSource, /下载全部明细（JSONL）/u);
+		assert.match(analyticsRouteSource, /MCP 审计专栏/u);
+		assert.match(analyticsRouteSource, /mcpLogs/u);
 		assert.match(analyticsRouteSource, /analytics\.get\("\/export"/u);
 		assert.match(analyticsRouteSource, /application\/x-ndjson/u);
 		assert.match(analyticsRouteSource, /attachment; filename=/u);
@@ -67,5 +71,18 @@ describe("访问统计后台能力保护", () => {
 		assert.match(migrationSource, /analytics_events_page_url_idx/u);
 		assert.match(migrationSource, /analytics_events_session_id_idx/u);
 		assert.match(migrationSource, /analytics_sessions_last_seen_idx/u);
+	});
+
+	test("MCP 审计表提供查询索引迁移", async () => {
+		const migrationSource = await readFile(
+			"drizzle/0017_mcp_audit_logs.sql",
+			"utf8",
+		);
+
+		assert.match(migrationSource, /mcp_audit_logs/u);
+		assert.match(migrationSource, /mcp_audit_logs_timestamp_idx/u);
+		assert.match(migrationSource, /mcp_audit_logs_status_idx/u);
+		assert.match(migrationSource, /mcp_audit_logs_tool_idx/u);
+		assert.match(migrationSource, /mcp_audit_logs_ip_idx/u);
 	});
 });

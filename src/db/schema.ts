@@ -262,6 +262,37 @@ export const analyticsEvents = sqliteTable("analytics_events", {
 	timestamp: text("timestamp").notNull().default(sql`(datetime('now'))`),
 });
 
+// ─── MCP 审计日志 ─────────────────────────────────────────────────────────────
+
+export const mcpAuditLogs = sqliteTable(
+	"mcp_audit_logs",
+	{
+		id: integer("id").primaryKey({ autoIncrement: true }),
+		ipAddress: text("ip_address"),
+		requestMethod: text("request_method").notNull(),
+		requestPath: text("request_path").notNull(),
+		sessionId: text("session_id"),
+		authState: text("auth_state").notNull(),
+		responseStatus: integer("response_status").notNull(),
+		outcome: text("outcome").notNull(),
+		mcpMethod: text("mcp_method"),
+		toolName: text("tool_name"),
+		requestId: text("request_id"),
+		detail: text("detail"),
+		userAgent: text("user_agent"),
+		timestamp: text("timestamp").notNull().default(sql`(datetime('now'))`),
+	},
+	(table) => [
+		index("mcp_audit_logs_timestamp_idx").on(table.timestamp),
+		index("mcp_audit_logs_status_idx").on(
+			table.responseStatus,
+			table.timestamp,
+		),
+		index("mcp_audit_logs_tool_idx").on(table.toolName, table.timestamp),
+		index("mcp_audit_logs_ip_idx").on(table.ipAddress, table.timestamp),
+	],
+);
+
 // ─── 登录尝试记录 ────────────────────────────────────────────────────────────
 
 export const loginAttempts = sqliteTable("login_attempts", {
@@ -297,5 +328,8 @@ export type NewAnalyticsSession = typeof analyticsSessions.$inferInsert;
 
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;
+
+export type McpAuditLog = typeof mcpAuditLogs.$inferSelect;
+export type NewMcpAuditLog = typeof mcpAuditLogs.$inferInsert;
 
 export type LoginAttempt = typeof loginAttempts.$inferSelect;

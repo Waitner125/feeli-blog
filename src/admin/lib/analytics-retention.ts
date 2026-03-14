@@ -10,6 +10,7 @@ export interface AnalyticsCleanupResult {
 	ran: boolean;
 	deletedEvents: number;
 	deletedSessions: number;
+	deletedMcpLogs: number;
 	lastCleanupAt: string;
 }
 
@@ -58,6 +59,7 @@ export async function maybeCleanupAnalyticsData(
 			ran: false,
 			deletedEvents: 0,
 			deletedSessions: 0,
+			deletedMcpLogs: 0,
 			lastCleanupAt: lastCleanupAt ?? "",
 		};
 	}
@@ -73,6 +75,11 @@ export async function maybeCleanupAnalyticsData(
 	)
 		.bind(retentionOffset)
 		.run();
+	const deleteMcpLogsResult = await env.DB.prepare(
+		"DELETE FROM mcp_audit_logs WHERE timestamp < datetime('now', ?)",
+	)
+		.bind(retentionOffset)
+		.run();
 
 	const now = new Date().toISOString();
 	await env.SESSION.put(LAST_CLEANUP_AT_KEY, now, {
@@ -83,6 +90,7 @@ export async function maybeCleanupAnalyticsData(
 		ran: true,
 		deletedEvents: readChangesCount(deleteEventsResult),
 		deletedSessions: readChangesCount(deleteSessionsResult),
+		deletedMcpLogs: readChangesCount(deleteMcpLogsResult),
 		lastCleanupAt: now,
 	};
 }
