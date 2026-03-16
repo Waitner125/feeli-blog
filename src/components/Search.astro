@@ -10,6 +10,8 @@ interface Props {
 	tags?: TaxonomyOption[];
 	selectedCategory?: string;
 	selectedTags?: string[];
+	selectedDateFrom?: string;
+	selectedDateTo?: string;
 }
 
 const {
@@ -18,6 +20,8 @@ const {
 	tags = [],
 	selectedCategory = "",
 	selectedTags = [],
+	selectedDateFrom = "",
+	selectedDateTo = "",
 }: Props = Astro.props;
 
 const selectedTagSet = new Set(selectedTags);
@@ -86,6 +90,34 @@ const selectedTagItems = tags.filter((tag) => selectedTagSet.has(tag.slug));
 					</details>
 				</div>
 			) : null}
+			<div class="search-date-shell">
+				<div class="search-date-head">
+					<span class="search-date-head-label">时间范围</span>
+					<span class="search-date-hint">起始日期可留空，结束日期默认为今天</span>
+				</div>
+				<div class="search-date-row">
+					<label class="search-date-field">
+						<span>从</span>
+						<input
+							type="date"
+							name="dateFrom"
+							class="search-date-input"
+							aria-label="起始日期"
+							value={selectedDateFrom}
+						/>
+					</label>
+					<label class="search-date-field">
+						<span>到</span>
+						<input
+							type="date"
+							name="dateTo"
+							class="search-date-input"
+							aria-label="结束日期"
+							value={selectedDateTo}
+						/>
+					</label>
+				</div>
+			</div>
 		</form>
 		<div id="search-results" class="search-results"></div>
 </div>
@@ -109,7 +141,8 @@ const selectedTagItems = tags.filter((tag) => selectedTagSet.has(tag.slug));
 	}
 
 	.search-input,
-	.search-select {
+	.search-select,
+	.search-date-input {
 		flex: 1;
 		min-width: min(100%, 12rem);
 		padding: 0.95rem 1rem;
@@ -133,10 +166,16 @@ const selectedTagItems = tags.filter((tag) => selectedTagSet.has(tag.slug));
 	}
 
 	.search-input:focus,
-	.search-select:focus {
+	.search-select:focus,
+	.search-date-input:focus {
 		outline: none;
 		border-color: rgba(10, 132, 255, 0.22);
 		background: var(--color-bg-tertiary);
+	}
+
+	.search-date-input {
+		min-width: 0;
+		width: 100%;
 	}
 
 		.search-button {
@@ -180,6 +219,45 @@ const selectedTagItems = tags.filter((tag) => selectedTagSet.has(tag.slug));
 
 		.search-selected-empty {
 			font-size: 0.78rem;
+			color: var(--color-text-muted);
+		}
+
+		.search-date-shell {
+			width: 100%;
+			display: grid;
+			gap: 0.5rem;
+		}
+
+		.search-date-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.6rem;
+			flex-wrap: wrap;
+		}
+
+		.search-date-head-label {
+			font-size: 0.82rem;
+			color: var(--color-text-muted);
+		}
+
+		.search-date-hint {
+			font-size: 0.78rem;
+			color: var(--color-text-muted);
+		}
+
+		.search-date-row {
+			display: flex;
+			gap: 0.72rem;
+			flex-wrap: wrap;
+		}
+
+		.search-date-field {
+			display: grid;
+			gap: 0.36rem;
+			flex: 1;
+			min-width: min(100%, 11rem);
+			font-size: 0.8rem;
 			color: var(--color-text-muted);
 		}
 

@@ -6,6 +6,40 @@ import Base from "@/layouts/Base.astro";
 import { getDb } from "@/lib/db";
 import { sanitizeSlug } from "@/lib/security";
 
+function formatDateForInput(date: Date) {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+}
+
+function normalizeDateInput(value: string | null) {
+	if (!value) {
+		return "";
+	}
+
+	const normalized = value.trim();
+	if (!/^\d{4}-\d{2}-\d{2}$/u.test(normalized)) {
+		return "";
+	}
+
+	const parsed = new Date(`${normalized}T00:00:00`);
+	if (Number.isNaN(parsed.getTime())) {
+		return "";
+	}
+
+	const [year, month, day] = normalized.split("-").map((item) => Number(item));
+	if (
+		parsed.getFullYear() !== year ||
+		parsed.getMonth() + 1 !== month ||
+		parsed.getDate() !== day
+	) {
+		return "";
+	}
+
+	return normalized;
+}
+
 const query = Astro.url.searchParams.get("q")?.trim() || "";
 const rawSelectedCategory =
 	Astro.url.searchParams.get("category")?.trim().toLowerCase() || "";
@@ -18,8 +52,19 @@ const selectedTags = [
 			.filter((item): item is string => Boolean(item)),
 	),
 ];
+const selectedDateFrom = normalizeDateInput(
+	Astro.url.searchParams.get("dateFrom"),
+);
+const selectedDateTo =
+	normalizeDateInput(Astro.url.searchParams.get("dateTo")) ||
+	formatDateForInput(new Date());
+
 const hasSearchCriteria = Boolean(
-	query || selectedCategory || selectedTags.length > 0,
+	query ||
+		selectedCategory ||
+		selectedTags.length > 0 ||
+		selectedDateFrom ||
+		selectedDateTo,
 );
 
 let categories: Array<{ slug: string; name: string }> = [];
@@ -49,6 +94,7 @@ const activeFilters = [
 	query ? `关键词：${query}` : "",
 	selectedCategory ? `分类：${selectedCategory}` : "",
 	selectedTags.length > 0 ? `标签：${selectedTags.join("、")}` : "",
+	`时间：${selectedDateFrom || "不限"} 至 ${selectedDateTo}`,
 ].filter(Boolean);
 ---
 
@@ -71,6 +117,8 @@ const activeFilters = [
 				tags={tags}
 				selectedCategory={selectedCategory}
 				selectedTags={selectedTags}
+				selectedDateFrom={selectedDateFrom}
+				selectedDateTo={selectedDateTo}
 			/>
 		</div>
 	</section>

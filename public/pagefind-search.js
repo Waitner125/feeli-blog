@@ -28,6 +28,65 @@ function formatDate(value) {
 	return parsed.toLocaleDateString();
 }
 
+function padDatePart(value) {
+	return String(value).padStart(2, "0");
+}
+
+function getTodayInputDate() {
+	const today = new Date();
+	return `${today.getFullYear()}-${padDatePart(today.getMonth() + 1)}-${padDatePart(
+		today.getDate(),
+	)}`;
+}
+
+function normalizeDateInput(value) {
+	const normalized = String(value ?? "").trim();
+	if (!normalized) {
+		return "";
+	}
+
+	if (!/^\d{4}-\d{2}-\d{2}$/u.test(normalized)) {
+		return "";
+	}
+
+	const parsed = new Date(`${normalized}T00:00:00`);
+	if (Number.isNaN(parsed.getTime())) {
+		return "";
+	}
+
+	const [year, month, day] = normalized.split("-").map((item) => Number(item));
+	if (
+		parsed.getFullYear() !== year ||
+		parsed.getMonth() + 1 !== month ||
+		parsed.getDate() !== day
+	) {
+		return "";
+	}
+
+	return normalized;
+}
+
+function toStartOfDayTimestamp(value) {
+	if (!value) {
+		return null;
+	}
+
+	const parsed = new Date(`${value}T00:00:00`);
+	const timestamp = parsed.getTime();
+	return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function toEndOfDayExclusiveTimestamp(value) {
+	const start = toStartOfDayTimestamp(value);
+	if (start === null) {
+		return null;
+	}
+
+	const parsed = new Date(start);
+	parsed.setDate(parsed.getDate() + 1);
+	return parsed.getTime();
+}
+
 function createResultCard(post) {
 	const formattedDate = formatDate(post.publishedAt);
 	const coverImageUrl = post.featuredImageKey
@@ -70,9 +129,35 @@ function readSearchState(form) {
 	const formData = new FormData(form);
 	const query = String(formData.get("q") ?? "").trim();
 	const category = String(formData.get("category") ?? "").trim().toLowerCase();
-	const tags = [...new Set(formData.getAll("tags").map((item) => String(item).trim().toLowerCase()).filter(Boolean))];
+	const tags = [
+		...new Set(
+			formData
+				.getAll("tags")
+				.map((item) => String(item).trim().toLowerCase())
+				.filter(Boolean),
+		),
+	];
+	const today = getTodayInputDate();
+	const currentUrl = new URL(window.location.href);
+	const hasDateToInQuery = currentUrl.searchParams.has("dateTo");
+	let dateFrom = normalizeDateInput(formData.get("dateFrom"));
+	let dateTo = normalizeDateInput(formData.get("dateTo"));
+	dateTo = hasDateToInQuery ? dateTo || today : today;
 
-	return { query, category, tags };
+	if (dateFrom && dateTo && dateFrom > dateTo) {
+		[dateFrom, dateTo] = [dateTo, dateFrom];
+	}
+
+	const dateFromInput = form.querySelector('input[name="dateFrom"]');
+	const dateToInput = form.querySelector('input[name="dateTo"]');
+	if (dateFromInput instanceof HTMLInputElement) {
+		dateFromInput.value = dateFrom;
+	}
+	if (dateToInput instanceof HTMLInputElement) {
+		dateToInput.value = dateTo;
+	}
+
+	return { query, category, tags, dateFrom, dateTo };
 }
 
 function buildSearchHref(state) {
@@ -80,6 +165,8 @@ function buildSearchHref(state) {
 	url.searchParams.delete("q");
 	url.searchParams.delete("category");
 	url.searchParams.delete("tags");
+	url.searchParams.delete("dateFrom");
+	url.searchParams.delete("dateTo");
 
 	if (state.query) {
 		url.searchParams.set("q", state.query);
@@ -89,6 +176,12 @@ function buildSearchHref(state) {
 	}
 	for (const tag of state.tags) {
 		url.searchParams.append("tags", tag);
+	}
+	if (state.dateFrom) {
+		url.searchParams.set("dateFrom", state.dateFrom);
+	}
+	if (state.dateTo) {
+		url.searchParams.set("dateTo", state.dateTo);
 	}
 
 	return `${url.pathname}${url.search}`;
@@ -119,6 +212,9 @@ function rankPosts(posts) {
 }
 
 function applyFilters(posts, state) {
+	const dateFromTimestamp = toStartOfDayTimestamp(state.dateFrom);
+	const dateToExclusiveTimestamp = toEndOfDayExclusiveTimestamp(state.dateTo);
+
 	return posts.filter((post) => {
 		if (state.category && post.categorySlug !== state.category) {
 			return false;
@@ -128,6 +224,22 @@ function applyFilters(posts, state) {
 			const tagSlugs = Array.isArray(post.tagSlugs) ? post.tagSlugs : [];
 			const hasAny = state.tags.some((tag) => tagSlugs.includes(tag));
 			if (!hasAny) {
+				return false;
+			}
+		}
+
+		if (dateFromTimestamp !== null || dateToExclusiveTimestamp !== null) {
+			const postTimestamp = Date.parse(post.publishedAt || post.updatedAt || "");
+			if (Number.isNaN(postTimestamp)) {
+				return false;
+			}
+			if (dateFromTimestamp !== null && postTimestamp < dateFromTimestamp) {
+				return false;
+			}
+			if (
+				dateToExclusiveTimestamp !== null &&
+				postTimestamp >= dateToExclusiveTimestamp
+			) {
 				return false;
 			}
 		}
@@ -192,7 +304,13 @@ async function withTimeout(promise, ms, message) {
 
 async function performSearch(context, state) {
 	const { metaData, resultsEl, summaryEl } = context;
-	const hasCriteria = Boolean(state.query || state.category || state.tags.length > 0);
+	const hasCriteria = Boolean(
+		state.query ||
+			state.category ||
+			state.tags.length > 0 ||
+			state.dateFrom ||
+			state.dateTo,
+	);
 	let usingFallbackSearch = false;
 
 	if (!hasCriteria) {

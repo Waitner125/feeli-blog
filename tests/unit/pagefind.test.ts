@@ -5,14 +5,28 @@ import { describe, test } from "node:test";
 describe("Pagefind 搜索集成", () => {
 	test("搜索页接入客户端检索脚本与结果容器", async () => {
 		const source = await readFile("src/pages/search.astro", "utf8");
+		const searchComponentSource = await readFile(
+			"src/components/Search.astro",
+			"utf8",
+		);
 		const searchScript = await readFile("public/pagefind-search.js", "utf8");
 
 		assert.ok(source.includes("pagefind-search.js"));
 		assert.ok(source.includes("pagefind-search-results"));
 		assert.ok(source.includes("Pagefind"));
+		assert.ok(searchComponentSource.includes('name="dateFrom"'));
+		assert.ok(searchComponentSource.includes('name="dateTo"'));
+		assert.ok(source.includes("selectedDateFrom"));
+		assert.ok(source.includes("selectedDateTo"));
 		assert.ok(searchScript.includes("搜索索引为空"));
 		assert.ok(searchScript.includes("history.pushState"));
 		assert.ok(searchScript.includes("buildSearchHref"));
+		assert.ok(searchScript.includes("getTodayInputDate"));
+		assert.ok(searchScript.includes("normalizeDateInput"));
+		assert.ok(searchScript.includes("toStartOfDayTimestamp"));
+		assert.ok(searchScript.includes("toEndOfDayExclusiveTimestamp"));
+		assert.ok(searchScript.includes("dateFrom"));
+		assert.ok(searchScript.includes("dateTo"));
 		assert.ok(
 			searchScript.includes('updateAddressBar(state, { mode: "push" })'),
 		);
