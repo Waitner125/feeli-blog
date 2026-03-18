@@ -10,14 +10,13 @@ describe("访问统计后台能力保护", () => {
 		);
 
 		assert.match(analyticsRouteSource, /eventsPage/u);
-		assert.match(analyticsRouteSource, /sessionsPage/u);
 		assert.match(analyticsRouteSource, /mcpPage/u);
 		assert.match(analyticsRouteSource, /RECENT_EVENTS_PAGE_SIZE/u);
-		assert.match(analyticsRouteSource, /RECENT_SESSIONS_PAGE_SIZE/u);
 		assert.match(analyticsRouteSource, /RECENT_MCP_PAGE_SIZE/u);
 		assert.match(analyticsRouteSource, /cleanup=1/u);
 		assert.match(analyticsRouteSource, /下载全部明细（JSONL）/u);
 		assert.match(analyticsRouteSource, /MCP 审计专栏/u);
+		assert.doesNotMatch(analyticsRouteSource, /最近会话（审计）/u);
 		assert.match(analyticsRouteSource, /mcpLogs/u);
 		assert.match(analyticsRouteSource, /analyticsEvents\.ipAddress/u);
 		assert.match(analyticsRouteSource, /analyticsEvents\.userAgent/u);

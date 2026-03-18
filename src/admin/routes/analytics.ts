@@ -18,16 +18,7 @@ const analytics = new Hono<AdminAppEnv>();
 
 const TOP_ITEMS_LIMIT = 10;
 const RECENT_EVENTS_PAGE_SIZE = 20;
-const RECENT_SESSIONS_PAGE_SIZE = 20;
 const RECENT_MCP_PAGE_SIZE = 30;
-
-type RecentSessionRow = {
-	ipAddress: string | null;
-	browser: string | null;
-	deviceType: string | null;
-	landingPage: string | null;
-	lastSeenAt: string;
-};
 
 type RecentEventRow = {
 	eventType: string;
@@ -116,7 +107,7 @@ function parsePageValue(value: string | undefined, fallback = 1) {
 
 function buildPageHref(
 	requestUrl: string,
-	paramKey: "eventsPage" | "sessionsPage" | "mcpPage",
+	paramKey: "eventsPage" | "mcpPage",
 	page: number,
 ) {
 	const url = new URL(requestUrl);
@@ -127,7 +118,7 @@ function buildPageHref(
 
 function renderPagination(options: {
 	requestUrl: string;
-	paramKey: "eventsPage" | "sessionsPage" | "mcpPage";
+	paramKey: "eventsPage" | "mcpPage";
 	current: number;
 	total: number;
 }) {
@@ -188,7 +179,6 @@ analytics.use("*", requireAuth);
 analytics.get("/", async (c) => {
 	const session = getAuthenticatedSession(c);
 	const requestedEventsPage = parsePageValue(c.req.query("eventsPage"), 1);
-	const requestedSessionsPage = parsePageValue(c.req.query("sessionsPage"), 1);
 	const requestedMcpPage = parsePageValue(c.req.query("mcpPage"), 1);
 	const forceCleanup = c.req.query("cleanup") === "1";
 
@@ -199,14 +189,11 @@ analytics.get("/", async (c) => {
 		totalMcpNotFound: 0,
 		topPages: [] as Array<{ pageUrl: string; views: number }>,
 		topReferrers: [] as Array<{ referrer: string; count: number }>,
-		recentSessions: [] as RecentSessionRow[],
 		recentEvents: [] as RecentEventRow[],
 		recentMcpLogs: [] as RecentMcpAuditRow[],
 		eventsPage: 1,
-		sessionsPage: 1,
 		mcpPage: 1,
 		totalEventPages: 1,
-		totalSessionPages: 1,
 		totalMcpPages: 1,
 		cleanupNotice: "",
 	};
@@ -245,22 +232,13 @@ analytics.get("/", async (c) => {
 			1,
 			Math.ceil(stats.totalPageViews / RECENT_EVENTS_PAGE_SIZE),
 		);
-		stats.totalSessionPages = Math.max(
-			1,
-			Math.ceil(stats.totalSessions / RECENT_SESSIONS_PAGE_SIZE),
-		);
 		stats.totalMcpPages = Math.max(
 			1,
 			Math.ceil(stats.totalMcpRequests / RECENT_MCP_PAGE_SIZE),
 		);
 		stats.eventsPage = Math.min(requestedEventsPage, stats.totalEventPages);
-		stats.sessionsPage = Math.min(
-			requestedSessionsPage,
-			stats.totalSessionPages,
-		);
 		stats.mcpPage = Math.min(requestedMcpPage, stats.totalMcpPages);
 		const eventsOffset = (stats.eventsPage - 1) * RECENT_EVENTS_PAGE_SIZE;
-		const sessionsOffset = (stats.sessionsPage - 1) * RECENT_SESSIONS_PAGE_SIZE;
 		const mcpOffset = (stats.mcpPage - 1) * RECENT_MCP_PAGE_SIZE;
 
 		stats.topPages = (await db
@@ -297,19 +275,6 @@ analytics.get("/", async (c) => {
 			.orderBy(desc(analyticsEvents.timestamp))
 			.limit(RECENT_EVENTS_PAGE_SIZE)
 			.offset(eventsOffset);
-
-		stats.recentSessions = await db
-			.select({
-				ipAddress: analyticsSessions.ipAddress,
-				browser: analyticsSessions.browser,
-				deviceType: analyticsSessions.deviceType,
-				landingPage: analyticsSessions.landingPage,
-				lastSeenAt: analyticsSessions.lastSeenAt,
-			})
-			.from(analyticsSessions)
-			.orderBy(desc(analyticsSessions.lastSeenAt))
-			.limit(RECENT_SESSIONS_PAGE_SIZE)
-			.offset(sessionsOffset);
 
 		stats.recentMcpLogs = await db
 			.select({
@@ -432,29 +397,6 @@ analytics.get("/", async (c) => {
 					total: stats.totalMcpPages,
 				})}`
 					: "<p class='empty-state'>当前还没有 MCP 审计日志。</p>"
-			}
-
-			<h2>最近会话（审计）</h2>
-			${
-				stats.recentSessions.length > 0
-					? `<div class="table-card"><table class="data-table">
-				<thead><tr><th>IP</th><th>浏览器/设备</th><th>落地页</th><th>最后访问</th></tr></thead>
-				<tbody>
-					${stats.recentSessions
-						.map(
-							(s) =>
-								`<tr><td>${escapeHtml(s.ipAddress || "-")}</td><td>${escapeHtml(`${s.browser || "Unknown"} / ${s.deviceType || "Unknown"}`)}</td><td class="table-cell-break">${escapeHtml(s.landingPage || "-")}</td><td>${renderLocalTimeCell(s.lastSeenAt)}</td></tr>`,
-						)
-						.join("")}
-				</tbody>
-			</table></div>
-			${renderPagination({
-				requestUrl: c.req.url,
-				paramKey: "sessionsPage",
-				current: stats.sessionsPage,
-				total: stats.totalSessionPages,
-			})}`
-					: "<p class='empty-state'>当前还没有会话审计数据。</p>"
 			}
 
 		<h2>最近事件</h2>
