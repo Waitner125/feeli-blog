@@ -1,0 +1,187 @@
+---
+import Base from "@/layouts/Base.astro";
+
+Astro.response.status = 404;
+const missingPath = Astro.url.pathname || "/";
+---
+
+<Base title="404 - 页面不存在" description="页面不存在，不过你可以试试这个终端彩蛋。">
+	<section
+		class="not-found-terminal glass-panel"
+		data-not-found-terminal="true"
+		data-ai-endpoint="/api/ai/terminal-404"
+		data-missing-path={missingPath}
+	>
+		<header class="terminal-header">
+			<span class="terminal-dot terminal-dot-danger"></span>
+			<span class="terminal-dot terminal-dot-warn"></span>
+			<span class="terminal-dot terminal-dot-ok"></span>
+			<strong class="terminal-title">404-terminal://not-found</strong>
+		</header>
+
+		<div class="terminal-log" data-terminal-log="true" role="log" aria-live="polite">
+			<p class="terminal-line terminal-line-system">[404] 未找到路径：{missingPath}</p>
+			<p class="terminal-line terminal-line-system">欢迎来到彩蛋终端，输入命令后将由外接 AI 返回终端风格结果。</p>
+			<p class="terminal-line terminal-line-system">可先试试：help、whoami、ls、pwd、about</p>
+		</div>
+
+		<form class="terminal-form" data-terminal-form="true">
+			<label class="terminal-input-wrap" for="terminalCommandInput">
+				<span class="terminal-prompt">guest@404:~$</span>
+				<input
+					id="terminalCommandInput"
+					class="terminal-input"
+					name="command"
+					type="text"
+					placeholder="输入命令并回车"
+					autocomplete="off"
+					spellcheck="false"
+					data-terminal-input="true"
+					maxlength="200"
+					required
+				/>
+			</label>
+			<button type="submit" class="terminal-submit">执行</button>
+		</form>
+	</section>
+	<script is:inline src="/not-found-terminal.js"></script>
+</Base>
+
+<style>
+	.not-found-terminal {
+		display: grid;
+		gap: 0.9rem;
+		padding: clamp(1rem, 0.8rem + 1vw, 1.6rem);
+		margin-bottom: 1.25rem;
+		border: 1px solid rgba(96, 165, 250, 0.25);
+		background: rgba(8, 12, 24, 0.72);
+	}
+
+	.terminal-header {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding-bottom: 0.55rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.terminal-dot {
+		width: 0.62rem;
+		height: 0.62rem;
+		border-radius: 999px;
+	}
+
+	.terminal-dot-danger {
+		background: #ff5f56;
+	}
+
+	.terminal-dot-warn {
+		background: #ffbd2e;
+	}
+
+	.terminal-dot-ok {
+		background: #27c93f;
+	}
+
+	.terminal-title {
+		margin-left: 0.35rem;
+		font-size: 0.8rem;
+		color: rgba(226, 232, 240, 0.78);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+	}
+
+	.terminal-log {
+		min-height: 300px;
+		max-height: min(56vh, 520px);
+		overflow: auto;
+		padding: 0.2rem 0.1rem;
+		display: grid;
+		gap: 0.32rem;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+		font-size: 0.88rem;
+		line-height: 1.48;
+	}
+
+	.terminal-line {
+		margin: 0;
+		white-space: pre-wrap;
+		word-break: break-word;
+		color: rgba(226, 232, 240, 0.92);
+	}
+
+	.terminal-line-command {
+		color: #a7f3d0;
+	}
+
+	.terminal-line-system {
+		color: rgba(148, 163, 184, 0.95);
+	}
+
+	.terminal-line-error {
+		color: #fca5a5;
+	}
+
+	.terminal-form {
+		display: flex;
+		gap: 0.62rem;
+		align-items: center;
+	}
+
+	.terminal-input-wrap {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.62rem 0.72rem;
+		border: 1px solid rgba(148, 163, 184, 0.3);
+		border-radius: 12px;
+		background: rgba(2, 6, 23, 0.58);
+	}
+
+	.terminal-prompt {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+		font-size: 0.84rem;
+		color: #86efac;
+		white-space: nowrap;
+	}
+
+	.terminal-input {
+		flex: 1;
+		min-width: 0;
+		border: none;
+		outline: none;
+		color: rgba(226, 232, 240, 0.96);
+		background: transparent;
+		font: inherit;
+	}
+
+	.terminal-input::placeholder {
+		color: rgba(148, 163, 184, 0.72);
+	}
+
+	.terminal-submit {
+		border: 1px solid rgba(96, 165, 250, 0.35);
+		background: linear-gradient(120deg, rgba(30, 64, 175, 0.55), rgba(37, 99, 235, 0.36));
+		color: rgba(239, 246, 255, 0.96);
+		padding: 0.6rem 0.85rem;
+		border-radius: 12px;
+		font-size: 0.82rem;
+		cursor: pointer;
+	}
+
+	.terminal-submit:hover {
+		border-color: rgba(147, 197, 253, 0.58);
+	}
+
+	@media (max-width: 640px) {
+		.terminal-form {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.terminal-submit {
+			width: 100%;
+		}
+	}
+</style>

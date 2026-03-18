@@ -455,6 +455,26 @@ describe("后台接口", () => {
 		assert.match(await res.text(), /公开 AI 接口/u);
 	});
 
+	test("POST /ai/terminal-404 在公开接口未配置时返回 503", async () => {
+		const res = await app.request(
+			"/ai/terminal-404",
+			{
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost",
+				},
+				body: JSON.stringify({
+					message: "help",
+				}),
+			},
+			mockEnv,
+		);
+
+		assert.equal(res.status, 503);
+		assert.match(await res.text(), /公开 AI 接口/u);
+	});
+
 	test("POST /ai/chat 在超过分钟限流时返回 429", async () => {
 		const res = await app.request(
 			"/ai/chat",

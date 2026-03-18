@@ -99,6 +99,25 @@ describe("源码回归保护", () => {
 		assert.match(mediaRouteSource, /buildProtectedAssetHeaders/u);
 	});
 
+	test("404 页面提供可交互终端彩蛋，并通过公开 AI 终端接口返回结果", async () => {
+		const [notFoundPageSource, terminalScriptSource] = await Promise.all([
+			readFile("src/pages/404.astro", "utf8"),
+			readFile("public/not-found-terminal.js", "utf8"),
+		]);
+
+		assert.match(notFoundPageSource, /Astro\.response\.status = 404/u);
+		assert.match(notFoundPageSource, /data-not-found-terminal="true"/u);
+		assert.match(
+			notFoundPageSource,
+			/data-ai-endpoint="\/api\/ai\/terminal-404"/u,
+		);
+		assert.match(notFoundPageSource, /guest@404:~\$/u);
+		assert.match(notFoundPageSource, /\/not-found-terminal\.js/u);
+		assert.match(terminalScriptSource, /\/api\/ai\/terminal-404/u);
+		assert.match(terminalScriptSource, /TERMINAL_CLEAR/u);
+		assert.match(terminalScriptSource, /astro:page-load/u);
+	});
+
 	test("文章卡片封面不再被额外高斯遮罩并保持满高显示", async () => {
 		const [postCardSource, postCardStyleSource] = await Promise.all([
 			readFile("src/components/PostCard.astro", "utf8"),

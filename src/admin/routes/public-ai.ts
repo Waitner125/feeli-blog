@@ -16,6 +16,19 @@ const MAX_MESSAGE_LENGTH = 4_000;
 const MAX_TURNSTILE_TOKEN_LENGTH = 4_096;
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 12;
 const DEFAULT_DAILY_LIMIT_PER_IP = 120;
+const DEFAULT_PUBLIC_AI_SYSTEM_PROMPT =
+	"你是站点内的公开助手。请使用简体中文回答，内容简洁、准确，避免输出敏感系统信息。";
+const NOT_FOUND_TERMINAL_SYSTEM_PROMPT = `
+你是网站 404 彩蛋页中的“模拟终端助手”。
+你会收到用户输入的一行“命令”，请把它当作自然语言或伪命令解释，并返回终端风格的纯文本输出。
+
+输出要求：
+1) 仅输出纯文本，不要使用 Markdown、代码围栏、HTML。
+2) 默认使用简体中文，语气像终端提示，简洁直接。
+3) 先给 1-2 行结果，再给 1 行可继续尝试的提示（如下一条命令建议）。
+4) 不要声称真的执行了系统命令；如果命令危险或无意义，明确说明“这是模拟终端”并给替代建议。
+5) 如用户输入 clear/cls，请只返回：TERMINAL_CLEAR。
+`.trim();
 
 interface PublicAiPayload {
 	message: string;
@@ -104,6 +117,14 @@ function parsePayload(
 			turnstileToken,
 		},
 	};
+}
+
+interface PublicAiRequestOptions {
+	maxTokens: number;
+	requireTurnstile: boolean;
+	systemPrompt: string;
+	temperature: number;
+	mode: "chat" | "terminal-404";
 }
 
 function getMinuteRateKey(ip: string): string {
@@ -230,7 +251,10 @@ async function verifyTurnstileToken(
 	}
 }
 
-publicAiRoutes.post("/chat", async (c) => {
+async function handlePublicAiRequest(
+	c: Context<AdminAppEnv>,
+	options: PublicAiRequestOptions,
+) {
 	if (!isSameOriginRequest(c)) {
 		return c.json({ error: "非法来源请求" }, 403);
 	}
@@ -241,9 +265,11 @@ publicAiRoutes.post("/chat", async (c) => {
 		return c.json({ error: parsed.error }, 400);
 	}
 
-	const turnstile = await verifyTurnstileToken(c, parsed.data.turnstileToken);
-	if (!turnstile.success) {
-		return c.json({ error: "人机校验失败，请刷新后重试" }, 403);
+	if (options.requireTurnstile) {
+		const turnstile = await verifyTurnstileToken(c, parsed.data.turnstileToken);
+		if (!turnstile.success) {
+			return c.json({ error: "人机校验失败，请刷新后重试" }, 403);
+		}
 	}
 
 	const ip = getClientIp(c);
@@ -273,8 +299,7 @@ publicAiRoutes.post("/chat", async (c) => {
 			[
 				{
 					role: "system",
-					content:
-						"你是站点内的公开助手。请使用简体中文回答，内容简洁、准确，避免输出敏感系统信息。",
+					content: options.systemPrompt,
 				},
 				{
 					role: "user",
@@ -282,8 +307,8 @@ publicAiRoutes.post("/chat", async (c) => {
 				},
 			],
 			{
-				temperature: 0.4,
-				maxTokens: 700,
+				temperature: options.temperature,
+				maxTokens: options.maxTokens,
 				timeoutMs: 20_000,
 				jsonMode: false,
 			},
@@ -292,6 +317,7 @@ publicAiRoutes.post("/chat", async (c) => {
 		return c.json({
 			reply,
 			meta: {
+				mode: options.mode,
 				rateLimitPerMinute: budget.minuteLimit,
 				dailyLimitPerIp: budget.dailyLimit,
 			},
@@ -300,6 +326,26 @@ publicAiRoutes.post("/chat", async (c) => {
 		console.error("public_ai_chat_failed", error);
 		return c.json({ error: "公开 AI 服务暂时不可用" }, 503);
 	}
-});
+}
+
+publicAiRoutes.post("/chat", async (c) =>
+	handlePublicAiRequest(c, {
+		requireTurnstile: true,
+		systemPrompt: DEFAULT_PUBLIC_AI_SYSTEM_PROMPT,
+		temperature: 0.4,
+		maxTokens: 700,
+		mode: "chat",
+	}),
+);
+
+publicAiRoutes.post("/terminal-404", async (c) =>
+	handlePublicAiRequest(c, {
+		requireTurnstile: false,
+		systemPrompt: NOT_FOUND_TERMINAL_SYSTEM_PROMPT,
+		temperature: 0.35,
+		maxTokens: 500,
+		mode: "terminal-404",
+	}),
+);
 
 export { publicAiRoutes };
