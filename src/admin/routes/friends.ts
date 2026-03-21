@@ -137,7 +137,7 @@ function parseFriendCreateInput(
 		getBodyText(body, "createStatus") || "approved",
 	);
 
-	if (!name || !siteUrl || !description || !contact || !status) {
+	if (!name || !siteUrl || !contact || !status) {
 		return { error: "invalid" };
 	}
 
@@ -211,7 +211,7 @@ function renderFriendRows(rows: FriendLinkRow[], csrfToken: string) {
 						}
 						<div class="review-item review-item-span-2">
 							<span class="review-item-label">简介</span>
-							<span class="review-item-value">${escapeHtml(item.description)}</span>
+							<span class="review-item-value">${item.description ? escapeHtml(item.description) : "（未填写）"}</span>
 						</div>
 						<div class="review-item">
 							<span class="review-item-label">联系方式</span>
@@ -312,8 +312,8 @@ function renderCreateForm(csrfToken: string): string {
 						<input id="createReviewNote" name="createReviewNote" class="form-input" maxlength="320" placeholder="例如：后台手动添加" />
 					</div>
 					<div class="form-group" style="grid-column: 1 / -1;">
-						<label for="createDescription">站点简介</label>
-						<textarea id="createDescription" name="createDescription" class="form-textarea" maxlength="320" rows="3" required></textarea>
+						<label for="createDescription">站点简介（可选）</label>
+						<textarea id="createDescription" name="createDescription" class="form-textarea" maxlength="320" rows="3"></textarea>
 					</div>
 					<div class="form-group" style="grid-column: 1 / -1;">
 						<label for="createNote">站长备注（可选）</label>

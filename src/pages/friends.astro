@@ -87,7 +87,7 @@ try {
 								>
 									{item.name}
 								</a>
-								<p class="friend-link-desc">{item.description}</p>
+								{item.description ? <p class="friend-link-desc">{item.description}</p> : null}
 								<p class="friend-link-contact">联系方式：{item.contact}</p>
 							</div>
 						</div>

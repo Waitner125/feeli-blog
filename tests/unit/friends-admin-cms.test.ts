@@ -16,6 +16,11 @@ describe("后台友链直录能力", () => {
 		assert.match(source, /name="createSiteUrl"/u);
 		assert.match(source, /name="createAvatarUrl"/u);
 		assert.match(source, /name="createDescription"/u);
+		assert.match(source, /站点简介（可选）/u);
+		assert.doesNotMatch(
+			source,
+			/<textarea[^>]*name="createDescription"[^>]*required/u,
+		);
 		assert.match(source, /name="createContact"/u);
 		assert.match(source, /name="createStatus"/u);
 		assert.match(source, /name="createReviewNote"/u);
@@ -29,6 +34,10 @@ describe("后台友链直录能力", () => {
 		assert.match(source, /friendsRoutes\.post\("\/create"/u);
 		assert.match(source, /parseFriendCreateInput/u);
 		assert.match(source, /sanitizeCanonicalUrl/u);
+		assert.match(
+			source,
+			/if \(!name \|\| !siteUrl \|\| !contact \|\| !status\)/u,
+		);
 		assert.match(source, /status=create-invalid/u);
 		assert.match(source, /status=create-duplicate/u);
 		assert.match(source, /status=created/u);

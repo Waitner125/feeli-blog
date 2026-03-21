@@ -155,7 +155,7 @@ function parseApplicationInput(
 	const rawAvatarUrl = getBodyText(body, "avatarUrl");
 	const avatarUrl = rawAvatarUrl ? sanitizeCanonicalUrl(rawAvatarUrl) : null;
 
-	if (!name || !description || !contact || !siteUrl) {
+	if (!name || !contact || !siteUrl) {
 		return { error: "invalid" } as const;
 	}
 

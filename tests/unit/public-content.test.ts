@@ -152,6 +152,11 @@ describe("源码回归保护", () => {
 		assert.ok(friendsSource.includes('href="/friends/apply"'));
 		assert.ok(!friendsSource.includes('action="/api/friend-links/apply"'));
 		assert.ok(applyPageSource.includes('action="/api/friend-links/apply"'));
+		assert.ok(applyPageSource.includes("站点简介（可选）"));
+		assert.doesNotMatch(
+			applyPageSource,
+			/<textarea[^>]*name="description"[^>]*required/u,
+		);
 		assert.ok(
 			applyPageSource.includes(
 				"https://challenges.cloudflare.com/turnstile/v0/api.js",
@@ -169,6 +174,7 @@ describe("源码回归保护", () => {
 				"https://challenges.cloudflare.com/turnstile/v0/siteverify",
 			),
 		);
+		assert.match(source, /if \(!name \|\| !contact \|\| !siteUrl\)/u);
 	});
 
 	test("公共页面 CSP 放行 Turnstile 域名", async () => {
