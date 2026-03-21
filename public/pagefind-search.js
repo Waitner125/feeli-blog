@@ -254,9 +254,14 @@ function fallbackKeywordSearch(posts, query) {
 	});
 }
 
-async function loadPagefindModule() {
-	const imported = await import("/pagefind/pagefind.js");
-	return imported?.default ?? imported;
+let _pagefindModuleCache = null;
+function loadPagefindModule() {
+	if (!_pagefindModuleCache) {
+		_pagefindModuleCache = import("/pagefind/pagefind.js").then(
+			(imported) => imported?.default ?? imported,
+		);
+	}
+	return _pagefindModuleCache;
 }
 
 function extractSlugFromUrl(urlPath) {
@@ -410,6 +415,9 @@ async function initPagefindSearch() {
 		updateSummary(summaryEl, "搜索索引为空");
 		return;
 	}
+
+	// 后台预热 Pagefind WASM，避免首次搜索冷启动超时
+	loadPagefindModule().then((mod) => mod.init?.()).catch(() => {});
 
 	await performSearch(context, readSearchState(form));
 
