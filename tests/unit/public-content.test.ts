@@ -338,6 +338,18 @@ describe("源码回归保护", () => {
 		assert.ok(globalStyleSource.includes("--font-serif-em:"));
 		assert.ok(globalStyleSource.includes('"Cormorant Garamond"'));
 		assert.ok(globalStyleSource.includes('--font-strong: "Space Grotesk"'));
+		assert.match(
+			globalStyleSource,
+			/--font-serif-body:\s*"Lora Variable",\s*"LXGW WenKai",\s*"Shippori Mincho",\s*serif;/u,
+		);
+		assert.match(
+			globalStyleSource,
+			/--font-serif-em:\s*"Cormorant Garamond",\s*"LXGW WenKai",\s*"Shippori Mincho",\s*serif;/u,
+		);
+		assert.match(
+			globalStyleSource,
+			/--font-strong:\s*"Space Grotesk",\s*"LXGW WenKai",\s*"Shippori Mincho",\s*sans-serif;/u,
+		);
 		assert.ok(globalStyleSource.includes("body {"));
 		assert.ok(globalStyleSource.includes(".prose p {"));
 		assert.ok(globalStyleSource.includes(".prose blockquote {"));

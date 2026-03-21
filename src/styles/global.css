@@ -24,10 +24,10 @@
 	--font-sans:
 		"SF Pro Display", "SF Pro Text", "PingFang SC", "Hiragino Sans GB",
 		"Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-	--font-serif-body: "Lora Variable", "Shippori Mincho", "LXGW WenKai", serif;
+	--font-serif-body: "Lora Variable", "LXGW WenKai", "Shippori Mincho", serif;
 	--font-serif-em:
-		"Cormorant Garamond", "Shippori Mincho", "LXGW WenKai", serif;
-	--font-strong: "Space Grotesk", "Shippori Mincho", "LXGW WenKai", sans-serif;
+		"Cormorant Garamond", "LXGW WenKai", "Shippori Mincho", serif;
+	--font-strong: "Space Grotesk", "LXGW WenKai", "Shippori Mincho", sans-serif;
 	--font-mono:
 		"SF Mono", "JetBrains Mono", "Cascadia Code", "Menlo", "Consolas", monospace;
 	--font-size-sm: 0.92rem;
