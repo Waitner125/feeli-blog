@@ -170,6 +170,7 @@ const hasToc = tocEntries.length > 0;
 		</article>
 	<script is:inline src="/article-transparency-toggle.js"></script>
 	<script is:inline src="/article-sidebar-sticky.js"></script>
+	<script is:inline src="/article-toc-highlight.js"></script>
 </Base>
 
 <style>
@@ -292,18 +293,35 @@ const hasToc = tocEntries.length > 0;
 	}
 
 	.article-toc {
-		display: grid;
-		gap: 0.9rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0;
 		padding: 1rem;
 		position: sticky;
 		top: var(--article-sidebar-sticky-top);
+		/* 固定后容器从导航栏下方延伸至屏幕底部，减去 sticky top 和底部留白 */
+		max-height: calc(100vh - var(--article-sidebar-sticky-top) - 1.2rem);
 	}
 
 	.article-toc-head {
+		flex: 0 0 auto;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.6rem;
+		padding-bottom: 0.7rem;
+	}
+
+	.article-toc-body {
+		/* flex 子元素必须 min-height: 0 才能收缩触发 overflow-y 滚动 */
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
+		/* 细滚动条 */
+		scrollbar-width: thin;
+		scrollbar-color: rgba(10, 132, 255, 0.3) transparent;
+		padding-bottom: 0.25rem;
 	}
 
 	.article-toc-head > span {
@@ -364,6 +382,14 @@ const hasToc = tocEntries.length > 0;
 		color: var(--color-accent);
 		border-left-color: var(--color-accent);
 		background: var(--color-accent-soft);
+	}
+
+	/* 当前阅读章节高亮（由 article-toc-highlight.js 动态添加 .active 类） */
+	.article-toc-link.active {
+		color: var(--color-accent);
+		border-left-color: var(--color-accent);
+		background: var(--color-accent-soft);
+		font-weight: 550;
 	}
 
 	/* slot 内容由父组件注入，Astro scoped 选择器无法直接匹配，需用 :global() */
@@ -501,6 +527,11 @@ const hasToc = tocEntries.length > 0;
 		.article-toc {
 			position: static;
 			top: auto;
+			max-height: none;
+		}
+
+		.article-toc-body {
+			overflow-y: visible;
 		}
 
 		.article-profile-avatar-frame {
