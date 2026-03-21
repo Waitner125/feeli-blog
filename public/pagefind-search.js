@@ -293,7 +293,7 @@ async function withTimeout(promise, ms, message) {
 }
 
 async function performSearch(context, state) {
-	const { metaData, resultsEl, summaryEl } = context;
+	const { metaData, resultsEl, summaryEl, sectionEl } = context;
 	const hasCriteria = Boolean(
 		state.query ||
 			state.category ||
@@ -306,9 +306,11 @@ async function performSearch(context, state) {
 	if (!hasCriteria) {
 		resultsEl.innerHTML = "";
 		updateSummary(summaryEl, "输入关键词或筛选条件后开始搜索");
+		if (sectionEl) sectionEl.style.display = "none";
 		return;
 	}
 
+	if (sectionEl) sectionEl.style.display = "";
 	updateSummary(summaryEl, "正在搜索中...");
 	let filteredPosts = applyFilters(metaData.posts, state);
 
@@ -408,7 +410,7 @@ async function initPagefindSearch() {
 		return;
 	}
 
-	const context = { metaData, resultsEl, summaryEl };
+	const context = { metaData, resultsEl, summaryEl, sectionEl: document.querySelector("#search-results-section") };
 	if (metaData.posts.length === 0) {
 		resultsEl.innerHTML =
 			'<div class="empty-state glass-panel"><p>当前暂无可搜索文章；如果你确认已发布内容，请先重建远端搜索索引后再部署。</p></div>';

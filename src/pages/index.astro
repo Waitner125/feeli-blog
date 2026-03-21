@@ -74,7 +74,7 @@ try {
 			and(getPublicPostVisibilityCondition(), eq(blogPosts.isPinned, false)),
 		)
 		.orderBy(desc(blogPosts.publishedAt), desc(blogPosts.createdAt))
-		.limit(6);
+		.limit(3);
 } catch {
 	// D1 未绑定时首页退化为空列表
 }
