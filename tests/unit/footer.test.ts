@@ -36,4 +36,13 @@ describe("页脚精简保护", () => {
 		assert.match(footerScriptSource, /remaining <=/u);
 		assert.match(footerScriptSource, /is-visible/u);
 	});
+
+	test("页脚浮层会跟随首页卡片透明度与高斯模糊参数", async () => {
+		const globalStylesSource = await readFile("src/styles/global.css", "utf8");
+
+		assert.match(
+			globalStylesSource,
+			/\.footer-inner\s*\{[\s\S]*?--glass-panel-opacity:\s*calc\(var\(--hero-card-opacity,\s*14\)\s*\/\s*100\);[\s\S]*?--glass-panel-blur:\s*var\(--hero-card-blur,\s*18px\);/u,
+		);
+	});
 });

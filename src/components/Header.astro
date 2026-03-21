@@ -106,8 +106,9 @@ function isLinkActive(href: string) {
 		border-radius: 0;
 		background: var(--nav-shell-open-surface);
 		box-shadow: var(--nav-shell-open-shadow);
-		backdrop-filter: blur(14px) saturate(125%);
-		-webkit-backdrop-filter: blur(14px) saturate(125%);
+		backdrop-filter: blur(var(--nav-shell-blur-effective, 14px)) saturate(125%);
+		-webkit-backdrop-filter: blur(var(--nav-shell-blur-effective, 14px))
+			saturate(125%);
 		transform-origin: top center;
 		transform: translate3d(0, 0, 0);
 		backface-visibility: hidden;
