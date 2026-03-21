@@ -89,14 +89,16 @@ function applySecurityHeaders(
 
 	if (!normalizedPath.startsWith("/api/")) {
 		const frameAncestors = isAdminPreview ? "'self'" : "'none'";
+		// 'wasm-unsafe-eval' 须在所有非 API 页面上生效：
+		// Astro ClientRouter (View Transitions) 客户端导航时不会刷新文档级 CSP，
+		// 任何页面都可能成为 Pagefind WASM 的宿主文档。
+		// WebAssembly.instantiate(bytes) 必须有此指令，否则 WASM 编译被 CSP 拦截。
 		const scriptSources = [
 			"'self'",
 			"https://giscus.app",
 			"https://challenges.cloudflare.com",
+			"'wasm-unsafe-eval'",
 		];
-		if (normalizedPath.startsWith("/search")) {
-			scriptSources.push("'wasm-unsafe-eval'");
-		}
 		response.headers.set(
 			"Content-Security-Policy",
 			[
