@@ -54,24 +54,27 @@ const missingPath = Astro.url.pathname || "/";
 		padding: clamp(1rem, 0.8rem + 1vw, 1.6rem);
 		margin-bottom: 1.25rem;
 		border: 1px solid rgba(96, 165, 250, 0.25);
-		/*
-		 * 深色终端表面（参考 code-window，始终保持深色外观）。
-		 * 透明度跟随后台「卡片透明度」控制，模糊跟随「卡片模糊」控制，
-		 * 与 friends / search 等页面的 glass-panel 保持一致。
-		 */
-		--card-surface-rgb: 8, 12, 24;
+		/* 透明度/模糊跟随后台「卡片」控制，与 friends / search 页面 glass-panel 保持一致 */
 		--glass-panel-opacity: calc(var(--hero-card-opacity, 14) / 100);
 		--glass-panel-blur: var(--hero-card-blur, 18px);
+		/* 终端语义色（深色模式默认值） */
+		--terminal-cmd-color: #a7f3d0;
+		--terminal-error-color: #fca5a5;
+		--terminal-prompt-color: #86efac;
 	}
 
-	/* 浅色主题：深色表面在高透明度下对白色文字对比度不足，保证最低 72% */
+	/* 浅色主题：终端语义色切换为深色可读版本 */
 	:root[data-theme="light"] .not-found-terminal {
-		--glass-panel-opacity: max(calc(var(--hero-card-opacity, 14) / 100), 0.72);
+		--terminal-cmd-color: #047857;
+		--terminal-error-color: #dc2626;
+		--terminal-prompt-color: #16a34a;
 	}
 
 	@media (prefers-color-scheme: light) {
 		:root:not([data-theme="dark"]) .not-found-terminal {
-			--glass-panel-opacity: max(calc(var(--hero-card-opacity, 14) / 100), 0.72);
+			--terminal-cmd-color: #047857;
+			--terminal-error-color: #dc2626;
+			--terminal-prompt-color: #16a34a;
 		}
 	}
 
@@ -80,7 +83,7 @@ const missingPath = Astro.url.pathname || "/";
 		align-items: center;
 		gap: 0.45rem;
 		padding-bottom: 0.55rem;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+		border-bottom: 1px solid var(--color-border);
 	}
 
 	.terminal-dot {
@@ -104,7 +107,7 @@ const missingPath = Astro.url.pathname || "/";
 	.terminal-title {
 		margin-left: 0.35rem;
 		font-size: 0.8rem;
-		color: rgba(226, 232, 240, 0.78);
+		color: var(--color-text-secondary);
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
 	}
 
@@ -124,19 +127,19 @@ const missingPath = Astro.url.pathname || "/";
 		margin: 0;
 		white-space: pre-wrap;
 		word-break: break-word;
-		color: rgba(226, 232, 240, 0.92);
+		color: var(--color-text);
 	}
 
 	.terminal-line-command {
-		color: #a7f3d0;
+		color: var(--terminal-cmd-color);
 	}
 
 	.terminal-line-system {
-		color: rgba(148, 163, 184, 0.95);
+		color: var(--color-text-muted);
 	}
 
 	.terminal-line-error {
-		color: #fca5a5;
+		color: var(--terminal-error-color);
 	}
 
 	.terminal-form {
@@ -152,15 +155,15 @@ const missingPath = Astro.url.pathname || "/";
 		align-items: center;
 		gap: 0.5rem;
 		padding: 0.62rem 0.72rem;
-		border: 1px solid rgba(148, 163, 184, 0.3);
+		border: 1px solid var(--color-border);
 		border-radius: 12px;
-		background: rgba(2, 6, 23, 0.58);
+		background: var(--color-bg-tertiary);
 	}
 
 	.terminal-prompt {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
 		font-size: 0.84rem;
-		color: #86efac;
+		color: var(--terminal-prompt-color);
 		white-space: nowrap;
 	}
 
@@ -169,13 +172,13 @@ const missingPath = Astro.url.pathname || "/";
 		min-width: 0;
 		border: none;
 		outline: none;
-		color: rgba(226, 232, 240, 0.96);
+		color: var(--color-text);
 		background: transparent;
 		font: inherit;
 	}
 
 	.terminal-input::placeholder {
-		color: rgba(148, 163, 184, 0.72);
+		color: var(--color-text-placeholder);
 	}
 
 	.terminal-submit {
