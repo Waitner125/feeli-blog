@@ -301,14 +301,19 @@ async function performSearch(context, state) {
 			state.dateFrom ||
 			state.dateTo,
 	);
+	// 服务端在无查询参数时将结果区域渲染为 display:none，
+	// 客户端 pushState 搜索时需要手动控制显隐。
+	const sectionEl = document.querySelector("#search-results-section");
 	let usingFallbackSearch = false;
 
 	if (!hasCriteria) {
 		resultsEl.innerHTML = "";
 		updateSummary(summaryEl, "输入关键词或筛选条件后开始搜索");
+		if (sectionEl) sectionEl.style.display = "none";
 		return;
 	}
 
+	if (sectionEl) sectionEl.style.removeProperty("display");
 	updateSummary(summaryEl, "正在搜索中...");
 	let filteredPosts = applyFilters(metaData.posts, state);
 
