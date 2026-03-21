@@ -469,4 +469,12 @@ function isLinkActive(href: string) {
 			border-radius: 24px;
 		}
 	}
+
+	/* 主题切换动画期间，View Transition 的截图层会阻断 backdrop-filter 采样，
+	 * 导致导航栏的磨玻璃背景变透明并透出下方内容。
+	 * 在切换过渡期间改用不透明的背景色兜底，视觉上保持导航栏不透明。 */
+	:global([data-theme-switching]) .site-nav::before {
+		background: var(--color-bg);
+		transition: none;
+	}
 </style>
