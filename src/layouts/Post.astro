@@ -366,7 +366,8 @@ const hasToc = tocEntries.length > 0;
 		background: var(--color-accent-soft);
 	}
 
-	.article-prose :is(h1, h2, h3, h4, h5, h6)[id] {
+	/* slot 内容由父组件注入，Astro scoped 选择器无法直接匹配，需用 :global() */
+	:global(.article-prose) :is(h1, h2, h3, h4, h5, h6)[id] {
 		scroll-margin-top: 6.2rem;
 	}
 
