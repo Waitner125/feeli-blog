@@ -134,6 +134,18 @@ describe("后台界面风格保护", () => {
 		assert.match(listSource, /置顶 #/u);
 	});
 
+	test("文章编辑页提供独立作者输入，并避免直接写入 GitHub 登录名", async () => {
+		const [editorSource, postsRouteSource] = await Promise.all([
+			readFile("src/admin/views/posts/editor.ts", "utf8"),
+			readFile("src/admin/routes/posts.ts", "utf8"),
+		]);
+
+		assert.match(editorSource, /name="authorName"/u);
+		assert.match(editorSource, /不会使用 GitHub 登录名/u);
+		assert.match(postsRouteSource, /authorName:\s*postInput\.authorName/u);
+		assert.doesNotMatch(postsRouteSource, /authorName:\s*session\.username/u);
+	});
+
 	test("文章编辑页提供 Markdown 实时预览区域", async () => {
 		const [editorSource, adminScriptSource, layoutSource] = await Promise.all([
 			readFile("src/admin/views/posts/editor.ts", "utf8"),

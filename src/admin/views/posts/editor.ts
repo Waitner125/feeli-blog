@@ -13,7 +13,7 @@ interface EditorData {
 	post?: BlogPost;
 	categories: BlogCategory[];
 	tags: BlogTag[];
-	currentUsername: string;
+	defaultAuthorName: string;
 	selectedTagIds?: number[];
 	csrfToken: string;
 	error?: string;
@@ -42,6 +42,7 @@ export function postEditorPage(data: EditorData): string {
 		post,
 		categories,
 		tags,
+		defaultAuthorName,
 		selectedTagIds = [],
 		csrfToken,
 		error,
@@ -63,6 +64,7 @@ export function postEditorPage(data: EditorData): string {
 	const publishedAtValue = toDateTimeLocalValue(post?.publishedAt || null);
 	const isScheduled = currentStatus === "scheduled";
 	const isPublished = currentStatus === "published";
+	const authorNameValue = post?.authorName?.trim() || defaultAuthorName.trim();
 
 	const content = `
 		<h1>${isEdit ? "编辑文章" : "新建文章"}</h1>
@@ -113,6 +115,20 @@ export function postEditorPage(data: EditorData): string {
 							</button>
 							<span class="form-help" data-ai-seo-status>将基于当前标题和正文回填摘要、SEO 标题/描述/关键词</span>
 						</div>
+					</div>
+
+					<div class="form-group">
+						<label for="authorName">作者</label>
+						<input
+							type="text"
+							id="authorName"
+							name="authorName"
+							class="form-input"
+							value="${escapeAttribute(authorNameValue)}"
+							maxlength="120"
+							required
+						/>
+						<p class="form-help">用于首页和文章页展示，默认带入站点外观里的“文章作者名”，不会使用 GitHub 登录名。</p>
 					</div>
 
 					<div class="form-group">

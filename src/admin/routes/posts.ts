@@ -19,7 +19,9 @@ import {
 import {
 	DEFAULT_AI_SETTINGS,
 	getResolvedAiSettings,
+	getSiteAppearance,
 } from "@/lib/site-appearance";
+import { siteConfig } from "@/lib/types";
 import {
 	type AdminAppEnv,
 	assertCsrfToken,
@@ -36,6 +38,7 @@ type BlogDb = ReturnType<typeof getDb>;
 
 interface ParsedPostInput {
 	title: string;
+	authorName: string;
 	slug: string;
 	content: string;
 	excerpt: string | null;
@@ -89,11 +92,30 @@ function renderPostErrorPage(csrfToken: string, message: string) {
 	);
 }
 
-function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
+async function getDefaultPostAuthorName(db: BlogDb): Promise<string> {
+	try {
+		const appearance = await getSiteAppearance(db);
+		return (
+			sanitizePlainText(appearance.articleSidebarName, 120) || siteConfig.author
+		);
+	} catch {
+		return siteConfig.author;
+	}
+}
+
+function parsePostInput(
+	body: Record<string, unknown>,
+	fallbackAuthorName: string,
+): ParsedPostInputResult {
 	const title = sanitizePlainText(body.title, 200);
 	if (!title) {
 		return { error: "标题不能为空" } as const;
 	}
+
+	const authorName =
+		sanitizePlainText(body.authorName, 120) ||
+		sanitizePlainText(fallbackAuthorName, 120) ||
+		siteConfig.author;
 
 	const rawSlugInput = sanitizePlainText(body.slug, 120).toLowerCase();
 	const manualSlug = rawSlugInput ? sanitizeSlug(rawSlugInput) : null;
@@ -202,6 +224,7 @@ function parsePostInput(body: Record<string, unknown>): ParsedPostInputResult {
 	return {
 		data: {
 			title,
+			authorName,
 			slug,
 			content,
 			excerpt:
@@ -495,13 +518,16 @@ posts.get("/new", async (c) => {
 	const session = getAuthenticatedSession(c);
 	try {
 		const db = getDb(c.env.DB);
-		const categories = await db.select().from(blogCategories);
-		const tags = await db.select().from(blogTags);
+		const [categories, tags, defaultAuthorName] = await Promise.all([
+			db.select().from(blogCategories),
+			db.select().from(blogTags),
+			getDefaultPostAuthorName(db),
+		]);
 		return c.html(
 			postEditorPage({
 				categories,
 				tags,
-				currentUsername: session.username,
+				defaultAuthorName,
 				csrfToken: session.csrfToken,
 			}),
 		);
@@ -510,7 +536,7 @@ posts.get("/new", async (c) => {
 			postEditorPage({
 				categories: [],
 				tags: [],
-				currentUsername: session.username,
+				defaultAuthorName: siteConfig.author,
 				csrfToken: session.csrfToken,
 			}),
 		);
@@ -525,7 +551,8 @@ posts.post("/", async (c) => {
 		return c.text("CSRF 校验失败", 403);
 	}
 
-	const parsed = parsePostInput(body);
+	const defaultAuthorName = await getDefaultPostAuthorName(db);
+	const parsed = parsePostInput(body, defaultAuthorName);
 	if ("error" in parsed) {
 		return c.html(renderPostErrorPage(session.csrfToken, parsed.error), 400);
 	}
@@ -567,7 +594,7 @@ posts.post("/", async (c) => {
 			metaKeywords: postInput.metaKeywords,
 			canonicalUrl: postInput.canonicalUrl,
 			categoryId,
-			authorName: session.username,
+			authorName: postInput.authorName,
 			createdAt: now,
 			updatedAt: now,
 		})
@@ -705,19 +732,22 @@ posts.get("/:id/edit", async (c) => {
 		return c.redirect("/api/admin/posts");
 	}
 
-	const categories = await db.select().from(blogCategories);
-	const tags = await db.select().from(blogTags);
-	const postTagRows = await db
-		.select({ tagId: blogPostTags.tagId })
-		.from(blogPostTags)
-		.where(eq(blogPostTags.postId, id));
+	const [categories, tags, postTagRows, defaultAuthorName] = await Promise.all([
+		db.select().from(blogCategories),
+		db.select().from(blogTags),
+		db
+			.select({ tagId: blogPostTags.tagId })
+			.from(blogPostTags)
+			.where(eq(blogPostTags.postId, id)),
+		getDefaultPostAuthorName(db),
+	]);
 
 	return c.html(
 		postEditorPage({
 			post,
 			categories,
 			tags,
-			currentUsername: session.username,
+			defaultAuthorName,
 			selectedTagIds: postTagRows.map((r) => r.tagId),
 			csrfToken: session.csrfToken,
 		}),
@@ -736,7 +766,8 @@ posts.post("/:id", async (c) => {
 		return c.text("CSRF 校验失败", 403);
 	}
 
-	const parsed = parsePostInput(body);
+	const defaultAuthorName = await getDefaultPostAuthorName(db);
+	const parsed = parsePostInput(body, defaultAuthorName);
 	if ("error" in parsed) {
 		return c.html(renderPostErrorPage(session.csrfToken, parsed.error), 400);
 	}
@@ -799,7 +830,7 @@ posts.post("/:id", async (c) => {
 			metaKeywords: postInput.metaKeywords,
 			canonicalUrl: postInput.canonicalUrl,
 			categoryId,
-			authorName: session.username,
+			authorName: postInput.authorName,
 			updatedAt: now,
 		})
 		.where(eq(blogPosts.id, id));
