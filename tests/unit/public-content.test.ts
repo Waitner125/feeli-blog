@@ -211,7 +211,8 @@ describe("源码回归保护", () => {
 	test("公共页面 CSP 放行 Turnstile 域名", async () => {
 		const source = await readFile("src/middleware.ts", "utf8");
 		assert.ok(source.includes("https://challenges.cloudflare.com"));
-		assert.ok(source.includes('normalizedPath.startsWith("/search")'));
+		assert.ok(source.includes('!normalizedPath.startsWith("/api/")'));
+		assert.ok(source.includes("任何页面都可能成为 Pagefind WASM 的宿主文档"));
 		assert.ok(source.includes("'wasm-unsafe-eval'"));
 	});
 

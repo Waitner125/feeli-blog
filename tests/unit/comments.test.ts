@@ -10,7 +10,7 @@ describe("评论组件保护", () => {
 		]);
 
 		assert.match(postLayoutSource, /<CommentsPanel/u);
-		assert.match(postLayoutSource, /article-comments-slot/u);
+		assert.match(postLayoutSource, /article-comments-card/u);
 		assert.match(commentsComponentSource, /data-comments-panel/u);
 		assert.match(commentsComponentSource, /data-comments-toggle/u);
 		assert.match(commentsComponentSource, /aria-expanded="false"/u);
