@@ -88,6 +88,13 @@ let post: {
 	canonicalUrl: string | null;
 	featuredImageKey: string | null;
 	featuredImageAlt: string | null;
+	backgroundMode: string | null;
+	backgroundImageKey: string | null;
+	backgroundOpacity: number;
+	backgroundBlur: number;
+	backgroundScale: number;
+	backgroundPositionX: number;
+	backgroundPositionY: number;
 	categoryName: string | null;
 } | null = null;
 let siteAppearance = DEFAULT_SITE_APPEARANCE;
@@ -108,6 +115,13 @@ try {
 			canonicalUrl: blogPosts.canonicalUrl,
 			featuredImageKey: blogPosts.featuredImageKey,
 			featuredImageAlt: blogPosts.featuredImageAlt,
+			backgroundMode: blogPosts.backgroundMode,
+			backgroundImageKey: blogPosts.backgroundImageKey,
+			backgroundOpacity: blogPosts.backgroundOpacity,
+			backgroundBlur: blogPosts.backgroundBlur,
+			backgroundScale: blogPosts.backgroundScale,
+			backgroundPositionX: blogPosts.backgroundPositionX,
+			backgroundPositionY: blogPosts.backgroundPositionY,
 			categoryName: blogCategories.name,
 		})
 		.from(blogPosts)
@@ -154,6 +168,22 @@ const { html: htmlContent, toc } = await renderSafeMarkdownWithToc(
 const featuredImageUrl = post.featuredImageKey
 	? `/media/${post.featuredImageKey}`
 	: undefined;
+const postBackgroundImageKey =
+	post.backgroundMode === "custom"
+		? post.backgroundImageKey
+		: post.backgroundMode === "cover"
+			? post.featuredImageKey
+			: null;
+const postBackgroundOverride = postBackgroundImageKey
+	? {
+			imageKey: postBackgroundImageKey,
+			opacity: post.backgroundOpacity,
+			blur: post.backgroundBlur,
+			scale: post.backgroundScale,
+			positionX: post.backgroundPositionX,
+			positionY: post.backgroundPositionY,
+		}
+	: undefined;
 ---
 
 <Post
@@ -169,6 +199,7 @@ const featuredImageUrl = post.featuredImageKey
 	articleSidebarName={siteAppearance.articleSidebarName}
 	articleSidebarBadge={siteAppearance.articleSidebarBadge}
 	articleSidebarBio={siteAppearance.articleSidebarBio}
+	backgroundOverride={postBackgroundOverride}
 	toc={toc}
 >
 	<Fragment set:html={htmlContent} />

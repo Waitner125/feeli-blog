@@ -17,6 +17,14 @@ interface Props {
 	articleSidebarName?: string;
 	articleSidebarBadge?: string;
 	articleSidebarBio?: string;
+	backgroundOverride?: {
+		imageKey: string;
+		opacity: number;
+		blur: number;
+		scale: number;
+		positionX: number;
+		positionY: number;
+	};
 	toc?: MarkdownTocItem[];
 }
 
@@ -33,6 +41,7 @@ const {
 	articleSidebarName,
 	articleSidebarBadge,
 	articleSidebarBio,
+	backgroundOverride,
 	toc,
 } = Astro.props;
 
@@ -54,7 +63,13 @@ const tocEntries = (toc ?? [])
 const hasToc = tocEntries.length > 0;
 ---
 
-<Base title={title} description={description} image={image} canonicalUrl={canonicalUrl}>
+<Base
+	title={title}
+	description={description}
+	image={image}
+	canonicalUrl={canonicalUrl}
+	backgroundOverride={backgroundOverride}
+>
 	<article class="article-shell">
 		<aside class:list={["article-sidebar", { "article-sidebar-with-toc": hasToc }]}>
 			<section class="article-profile glass-panel">

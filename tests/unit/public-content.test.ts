@@ -82,6 +82,14 @@ describe("源码回归保护", () => {
 			postPageSource,
 			/viewCount:\s*sql`\$\{blogPosts\.viewCount\}\s*\+\s*1`/u,
 		);
+		assert.match(
+			postPageSource,
+			/backgroundMode:\s*blogPosts\.backgroundMode/u,
+		);
+		assert.match(
+			postPageSource,
+			/backgroundOverride=\{postBackgroundOverride\}/u,
+		);
 		assert.match(searchPageSource, /pagefind-search\.js/u);
 		assert.match(searchPageSource, /pagefind-search-results/u);
 	});

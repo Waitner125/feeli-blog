@@ -25,6 +25,13 @@ describe("数据库结构", () => {
 		assert.ok(columns.includes("excerpt"));
 		assert.ok(columns.includes("publishedAt"));
 		assert.ok(columns.includes("featuredImageKey"));
+		assert.ok(columns.includes("backgroundMode"));
+		assert.ok(columns.includes("backgroundImageKey"));
+		assert.ok(columns.includes("backgroundOpacity"));
+		assert.ok(columns.includes("backgroundBlur"));
+		assert.ok(columns.includes("backgroundScale"));
+		assert.ok(columns.includes("backgroundPositionX"));
+		assert.ok(columns.includes("backgroundPositionY"));
 		assert.ok(columns.includes("isPinned"));
 		assert.ok(columns.includes("pinnedOrder"));
 		assert.ok(columns.includes("metaTitle"));

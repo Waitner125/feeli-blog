@@ -1015,6 +1015,36 @@ export const adminSharedStyles = `
 			gap: 0.6rem;
 		}
 
+		.editor-background-grid {
+			display: grid;
+			gap: 0.72rem;
+		}
+
+		.editor-background-range {
+			display: grid;
+			gap: 0.42rem;
+		}
+
+		.editor-background-range-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.7rem;
+		}
+
+		.editor-background-range-head label {
+			margin-bottom: 0;
+		}
+
+		.editor-background-range-head span {
+			font-size: 0.82rem;
+			color: var(--text-muted);
+		}
+
+		.editor-background-range input[type="range"] {
+			width: 100%;
+		}
+
 		.new-category-wrap {
 			margin-top: 0.7rem;
 		}

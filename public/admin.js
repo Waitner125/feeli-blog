@@ -12,6 +12,15 @@ const publishedDateField = document.querySelector(
 	"[data-published-date-field='true']",
 );
 const publishedAtInput = document.querySelector("[data-published-at-input='true']");
+const postBackgroundModeSelect = document.querySelector(
+	"[data-post-background-mode='true']",
+);
+const postBackgroundCustomWrap = document.querySelector(
+	"[data-post-background-custom-wrap='true']",
+);
+const postBackgroundControlsWrap = document.querySelector(
+	"[data-post-background-controls='true']",
+);
 const contentTextarea = document.getElementById("content");
 const contentUploadStatus = document.querySelector("[data-content-upload-status]");
 const markdownPreview = document.querySelector("[data-markdown-preview='true']");
@@ -624,6 +633,83 @@ function syncPublishedDateFieldVisibility() {
 	}
 }
 
+function syncPostBackgroundModeVisibility() {
+	if (!(postBackgroundModeSelect instanceof HTMLSelectElement)) {
+		return;
+	}
+
+	const mode = String(postBackgroundModeSelect.value || "global");
+	const isCustomMode = mode === "custom";
+	const showControls = mode === "custom" || mode === "cover";
+
+	if (postBackgroundCustomWrap instanceof HTMLElement) {
+		postBackgroundCustomWrap.classList.toggle("is-hidden", !isCustomMode);
+	}
+
+	if (postBackgroundControlsWrap instanceof HTMLElement) {
+		postBackgroundControlsWrap.classList.toggle("is-hidden", !showControls);
+	}
+}
+
+function updatePostBackgroundDisplay(name, value) {
+	const target = document.querySelector(
+		`[data-post-background-display="${name}"]`,
+	);
+	if (!(target instanceof HTMLElement)) {
+		return;
+	}
+
+	if (name === "backgroundBlur") {
+		target.textContent = `${value} px`;
+		return;
+	}
+
+	target.textContent = `${value}%`;
+}
+
+function updatePostBackgroundControlPreview() {
+	const transparencyInput = document.querySelector(
+		'[data-post-background-control="backgroundTransparency"]',
+	);
+	const blurInput = document.querySelector(
+		'[data-post-background-control="backgroundBlur"]',
+	);
+	const scaleInput = document.querySelector(
+		'[data-post-background-control="backgroundScale"]',
+	);
+	const positionXInput = document.querySelector(
+		'[data-post-background-control="backgroundPositionX"]',
+	);
+	const positionYInput = document.querySelector(
+		'[data-post-background-control="backgroundPositionY"]',
+	);
+
+	if (transparencyInput instanceof HTMLInputElement) {
+		updatePostBackgroundDisplay(
+			"backgroundTransparency",
+			Number(transparencyInput.value),
+		);
+	}
+	if (blurInput instanceof HTMLInputElement) {
+		updatePostBackgroundDisplay("backgroundBlur", Number(blurInput.value));
+	}
+	if (scaleInput instanceof HTMLInputElement) {
+		updatePostBackgroundDisplay("backgroundScale", Number(scaleInput.value));
+	}
+	if (positionXInput instanceof HTMLInputElement) {
+		updatePostBackgroundDisplay(
+			"backgroundPositionX",
+			Number(positionXInput.value),
+		);
+	}
+	if (positionYInput instanceof HTMLInputElement) {
+		updatePostBackgroundDisplay(
+			"backgroundPositionY",
+			Number(positionYInput.value),
+		);
+	}
+}
+
 function buildSlugValue(value) {
 	return value
 		.toLowerCase()
@@ -762,6 +848,13 @@ function collectEditorDraftValues() {
 		newCategoryName: getEditorFieldValue("newCategoryName"),
 		featuredImageKey: getEditorFieldValue("featuredImageKey"),
 		featuredImageAlt: getEditorFieldValue("featuredImageAlt"),
+		backgroundMode: getEditorFieldValue("backgroundMode") || "global",
+		backgroundImageKey: getEditorFieldValue("backgroundImageKey"),
+		backgroundTransparency: getEditorFieldValue("backgroundTransparency"),
+		backgroundBlur: getEditorFieldValue("backgroundBlur"),
+		backgroundScale: getEditorFieldValue("backgroundScale"),
+		backgroundPositionX: getEditorFieldValue("backgroundPositionX"),
+		backgroundPositionY: getEditorFieldValue("backgroundPositionY"),
 		metaTitle: getEditorFieldValue("metaTitle"),
 		metaDescription: getEditorFieldValue("metaDescription"),
 		metaKeywords: getEditorFieldValue("metaKeywords"),
@@ -792,6 +885,13 @@ function isEditorDraftPristine(values) {
 		!values.newCategoryName.trim() &&
 		!values.featuredImageKey.trim() &&
 		!values.featuredImageAlt.trim() &&
+		(values.backgroundMode || "global") === "global" &&
+		!values.backgroundImageKey.trim() &&
+		(values.backgroundTransparency || "28") === "28" &&
+		(values.backgroundBlur || "24") === "24" &&
+		(values.backgroundScale || "12") === "12" &&
+		(values.backgroundPositionX || "0") === "0" &&
+		(values.backgroundPositionY || "0") === "0" &&
 		!values.metaTitle.trim() &&
 		!values.metaDescription.trim() &&
 		!values.metaKeywords.trim() &&
@@ -814,6 +914,13 @@ function normalizeEditorDraftValues(raw) {
 		newCategoryName: String(raw?.newCategoryName ?? ""),
 		featuredImageKey: String(raw?.featuredImageKey ?? ""),
 		featuredImageAlt: String(raw?.featuredImageAlt ?? ""),
+		backgroundMode: String(raw?.backgroundMode ?? "global"),
+		backgroundImageKey: String(raw?.backgroundImageKey ?? ""),
+		backgroundTransparency: String(raw?.backgroundTransparency ?? "28"),
+		backgroundBlur: String(raw?.backgroundBlur ?? "24"),
+		backgroundScale: String(raw?.backgroundScale ?? "12"),
+		backgroundPositionX: String(raw?.backgroundPositionX ?? "0"),
+		backgroundPositionY: String(raw?.backgroundPositionY ?? "0"),
 		metaTitle: String(raw?.metaTitle ?? ""),
 		metaDescription: String(raw?.metaDescription ?? ""),
 		metaKeywords: String(raw?.metaKeywords ?? ""),
@@ -824,6 +931,9 @@ function normalizeEditorDraftValues(raw) {
 
 	if (!["draft", "published", "scheduled"].includes(normalized.status)) {
 		normalized.status = "draft";
+	}
+	if (!["global", "cover", "custom"].includes(normalized.backgroundMode)) {
+		normalized.backgroundMode = "global";
 	}
 
 	return normalized;
@@ -1072,6 +1182,34 @@ function syncEditorCoverPreviewFromKey() {
 	image.alt = altText;
 }
 
+function syncEditorPostBackgroundPreviewFromKey() {
+	const keyInput = document.querySelector("[data-post-background-key-input='true']");
+	const dropzone = document.querySelector("[data-post-background-dropzone='true']");
+
+	if (!(keyInput instanceof HTMLInputElement) || !(dropzone instanceof HTMLElement)) {
+		return;
+	}
+
+	const key = keyInput.value.trim();
+	if (!key) {
+		dropzone.innerHTML =
+			'<div class="cover-empty" data-post-background-empty="true">拖拽图片或点击上传</div>';
+		return;
+	}
+
+	let image = dropzone.querySelector("[data-post-background-preview-image='true']");
+	if (!(image instanceof HTMLImageElement)) {
+		image = document.createElement("img");
+		image.className = "cover-preview-image";
+		image.setAttribute("data-post-background-preview-image", "true");
+		image.alt = "文章背景图预览";
+		dropzone.innerHTML = "";
+		dropzone.appendChild(image);
+	}
+
+	image.src = `/media/${key}`;
+}
+
 function applyEditorDraftValues(values) {
 	const normalized = normalizeEditorDraftValues(values);
 	isApplyingEditorDraft = true;
@@ -1108,8 +1246,12 @@ function applyEditorDraftValues(values) {
 	updateTagIds();
 	syncNewCategoryInputVisibility();
 	syncScheduleFieldVisibility();
+	syncPublishedDateFieldVisibility();
+	syncPostBackgroundModeVisibility();
 	updateSlugPreview();
 	syncEditorCoverPreviewFromKey();
+	syncEditorPostBackgroundPreviewFromKey();
+	updatePostBackgroundControlPreview();
 	syncMarkdownPreview();
 	isApplyingEditorDraft = false;
 }
@@ -1259,6 +1401,20 @@ statusSelect?.addEventListener("change", syncScheduleFieldVisibility);
 statusSelect?.addEventListener("change", syncPublishedDateFieldVisibility);
 syncScheduleFieldVisibility();
 syncPublishedDateFieldVisibility();
+postBackgroundModeSelect?.addEventListener(
+	"change",
+	syncPostBackgroundModeVisibility,
+);
+syncPostBackgroundModeVisibility();
+
+for (const control of document.querySelectorAll("[data-post-background-control]")) {
+	control?.addEventListener("input", updatePostBackgroundControlPreview);
+}
+updatePostBackgroundControlPreview();
+document
+	.querySelector("[data-post-background-key-input='true']")
+	?.addEventListener("input", syncEditorPostBackgroundPreviewFromKey);
+syncEditorPostBackgroundPreviewFromKey();
 
 draftRestoreButton?.addEventListener("click", () => {
 	if (!editorDraftState?.values) {
@@ -1464,6 +1620,146 @@ for (const uploader of document.querySelectorAll("[data-cover-uploader='true']")
 	clearButton?.addEventListener("click", () => {
 		setCoverValue("", "");
 		setStatus("封面已清空");
+	});
+
+	dropzone?.addEventListener("dragover", (event) => {
+		event.preventDefault();
+		if (dropzone instanceof HTMLElement) {
+			dropzone.classList.add("is-dragover");
+		}
+	});
+
+	dropzone?.addEventListener("click", () => {
+		if (fileInput instanceof HTMLInputElement) {
+			fileInput.click();
+		}
+	});
+
+	dropzone?.addEventListener("dragleave", () => {
+		if (dropzone instanceof HTMLElement) {
+			dropzone.classList.remove("is-dragover");
+		}
+	});
+
+	dropzone?.addEventListener("drop", (event) => {
+		event.preventDefault();
+		if (dropzone instanceof HTMLElement) {
+			dropzone.classList.remove("is-dragover");
+		}
+
+		const file = event.dataTransfer?.files?.[0];
+		if (!file) {
+			return;
+		}
+
+		void uploadFile(file);
+	});
+}
+
+for (const uploader of document.querySelectorAll("[data-post-background-uploader='true']")) {
+	if (!(uploader instanceof HTMLElement)) {
+		continue;
+	}
+
+	const uploadUrl = uploader.dataset.uploadUrl || "";
+	const csrfToken = uploader.dataset.csrfToken || "";
+	const hiddenKeyInput =
+		uploader.querySelector("[data-post-background-key-input='true']") ||
+		uploader
+			.closest(".form-group")
+			?.querySelector("[data-post-background-key-input='true']") ||
+		document.querySelector("[data-post-background-key-input='true']");
+	const fileInput = uploader.querySelector("[data-post-background-file-input='true']");
+	const dropzone = uploader.querySelector("[data-post-background-dropzone='true']");
+	const status = uploader.querySelector("[data-post-background-upload-status]");
+	const selectButton = uploader.querySelector("[data-post-background-select='true']");
+	const clearButton = uploader.querySelector("[data-post-background-clear='true']");
+
+	const ensurePreviewImage = () => {
+		if (!(dropzone instanceof HTMLElement)) {
+			return null;
+		}
+
+		const existing = dropzone.querySelector(
+			"[data-post-background-preview-image='true']",
+		);
+		if (existing instanceof HTMLImageElement) {
+			return existing;
+		}
+
+		const image = document.createElement("img");
+		image.className = "cover-preview-image";
+		image.setAttribute("data-post-background-preview-image", "true");
+		image.alt = "文章背景图预览";
+		dropzone.innerHTML = "";
+		dropzone.appendChild(image);
+		return image;
+	};
+
+	const setEmptyState = () => {
+		if (!(dropzone instanceof HTMLElement)) {
+			return;
+		}
+
+		dropzone.innerHTML =
+			'<div class="cover-empty" data-post-background-empty="true">拖拽图片或点击上传</div>';
+	};
+
+	const setBackgroundValue = (key, url) => {
+		if (hiddenKeyInput instanceof HTMLInputElement) {
+			hiddenKeyInput.value = key;
+		}
+
+		if (!key) {
+			setEmptyState();
+			return;
+		}
+
+		const image = ensurePreviewImage();
+		if (image instanceof HTMLImageElement) {
+			image.src = url;
+		}
+	};
+
+	const uploadFile = async (file) => {
+		if (!file || !uploadUrl || !csrfToken) {
+			return;
+		}
+
+		setStatusMessage(status, "正在上传背景图");
+
+		try {
+			const uploaded = await uploadImageToMedia(file, uploadUrl, csrfToken, {
+				uploadScope: resolveEditorPostMediaScope(),
+				uploadKind: "cover",
+			});
+			setBackgroundValue(uploaded.key, uploaded.url);
+			setStatusMessage(status, "背景图上传成功", "success");
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "背景图上传失败，请检查网络后重试";
+			setStatusMessage(status, message, "error");
+		}
+	};
+
+	selectButton?.addEventListener("click", () => {
+		if (fileInput instanceof HTMLInputElement) {
+			fileInput.click();
+		}
+	});
+
+	fileInput?.addEventListener("change", () => {
+		if (!(fileInput instanceof HTMLInputElement) || !fileInput.files?.[0]) {
+			return;
+		}
+
+		void uploadFile(fileInput.files[0]);
+		fileInput.value = "";
+	});
+
+	clearButton?.addEventListener("click", () => {
+		setBackgroundValue("", "");
+		setStatusMessage(status, "背景图已清空");
 	});
 
 	dropzone?.addEventListener("dragover", (event) => {

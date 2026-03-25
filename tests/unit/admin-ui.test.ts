@@ -91,6 +91,44 @@ describe("后台界面风格保护", () => {
 		assert.match(adminScriptSource, /uploadKind: "content"/u);
 	});
 
+	test("文章编辑页支持背景来源切换、自定义背景上传和背景参数滑块", async () => {
+		const [editorSource, adminScriptSource, postsRouteSource] =
+			await Promise.all([
+				readFile("src/admin/views/posts/editor.ts", "utf8"),
+				readFile("public/admin.js", "utf8"),
+				readFile("src/admin/routes/posts.ts", "utf8"),
+			]);
+
+		assert.match(editorSource, /name="backgroundMode"/u);
+		assert.match(editorSource, /跟随站点全局背景/u);
+		assert.match(editorSource, /使用封面图作为背景/u);
+		assert.match(editorSource, /上传自定义背景图/u);
+		assert.match(editorSource, /data-post-background-custom-wrap="true"/u);
+		assert.match(editorSource, /data-post-background-uploader="true"/u);
+		assert.match(editorSource, /data-post-background-key-input="true"/u);
+		assert.match(
+			editorSource,
+			/data-post-background-control="backgroundTransparency"/u,
+		);
+		assert.match(
+			editorSource,
+			/data-post-background-control="backgroundScale"/u,
+		);
+		assert.match(
+			editorSource,
+			/data-post-background-control="backgroundPositionY"/u,
+		);
+		assert.match(adminScriptSource, /syncPostBackgroundModeVisibility/u);
+		assert.match(adminScriptSource, /data-post-background-uploader='true'/u);
+		assert.match(adminScriptSource, /syncEditorPostBackgroundPreviewFromKey/u);
+		assert.match(adminScriptSource, /uploadFile = async \(file\) =>/u);
+		assert.match(adminScriptSource, /背景图上传成功/u);
+		assert.match(postsRouteSource, /backgroundModeRaw/u);
+		assert.match(postsRouteSource, /backgroundImageKeyRaw/u);
+		assert.match(postsRouteSource, /postInput\.backgroundMode/u);
+		assert.match(postsRouteSource, /postInput\.backgroundScale/u);
+	});
+
 	test("文章编辑页状态与分类联动使用隐藏显示逻辑", async () => {
 		const [editorSource, adminScriptSource] = await Promise.all([
 			readFile("src/admin/views/posts/editor.ts", "utf8"),

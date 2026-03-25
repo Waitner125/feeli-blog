@@ -37,6 +37,45 @@ function toDateTimeLocalValue(value?: string | null): string {
 	return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
+const POST_BACKGROUND_MODES = ["global", "cover", "custom"] as const;
+type PostBackgroundMode = (typeof POST_BACKGROUND_MODES)[number];
+
+const DEFAULT_POST_BACKGROUND = {
+	opacity: 72,
+	blur: 24,
+	scale: 112,
+	positionX: 50,
+	positionY: 50,
+} as const;
+
+function clampInteger(
+	value: number | null | undefined,
+	min: number,
+	max: number,
+	fallback: number,
+): number {
+	if (typeof value !== "number" || Number.isNaN(value)) {
+		return fallback;
+	}
+
+	return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+function normalizePostBackgroundMode(
+	value: string | null | undefined,
+): PostBackgroundMode {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
+	return POST_BACKGROUND_MODES.includes(normalized as PostBackgroundMode)
+		? (normalized as PostBackgroundMode)
+		: "global";
+}
+
+function convertOpacityToTransparency(opacity: number): number {
+	return Math.max(0, Math.min(100, 100 - Math.round(opacity)));
+}
+
 export function postEditorPage(data: EditorData): string {
 	const {
 		post,
@@ -65,6 +104,50 @@ export function postEditorPage(data: EditorData): string {
 	const isScheduled = currentStatus === "scheduled";
 	const isPublished = currentStatus === "published";
 	const authorNameValue = post?.authorName?.trim() || defaultAuthorName.trim();
+	const backgroundMode = normalizePostBackgroundMode(post?.backgroundMode);
+	const backgroundImageKey = post?.backgroundImageKey || "";
+	const backgroundImageUrl = backgroundImageKey
+		? `/media/${backgroundImageKey}`
+		: "";
+	const backgroundTransparency = String(
+		convertOpacityToTransparency(
+			clampInteger(
+				post?.backgroundOpacity,
+				0,
+				100,
+				DEFAULT_POST_BACKGROUND.opacity,
+			),
+		),
+	);
+	const backgroundBlur = String(
+		clampInteger(post?.backgroundBlur, 0, 60, DEFAULT_POST_BACKGROUND.blur),
+	);
+	const backgroundScale = String(
+		clampInteger(
+			post?.backgroundScale,
+			100,
+			180,
+			DEFAULT_POST_BACKGROUND.scale,
+		) - 100,
+	);
+	const backgroundPositionX = String(
+		clampInteger(
+			post?.backgroundPositionX,
+			0,
+			100,
+			DEFAULT_POST_BACKGROUND.positionX,
+		) - 50,
+	);
+	const backgroundPositionY = String(
+		clampInteger(
+			post?.backgroundPositionY,
+			0,
+			100,
+			DEFAULT_POST_BACKGROUND.positionY,
+		) - 50,
+	);
+	const showPostBackgroundControls = backgroundMode !== "global";
+	const showCustomBackgroundUploader = backgroundMode === "custom";
 
 	const content = `
 		<h1>${isEdit ? "编辑文章" : "新建文章"}</h1>
@@ -280,6 +363,142 @@ export function postEditorPage(data: EditorData): string {
 						<label for="featuredImageAlt">封面替代文本</label>
 						<input type="text" id="featuredImageAlt" name="featuredImageAlt" class="form-input" value="${escapeAttribute(featuredImageAlt)}" maxlength="200" placeholder="可选，建议描述封面内容用于可访问性" />
 					</div>
+
+					<details>
+						<summary>文章背景（可选）</summary>
+						<div class="form-group">
+							<label for="backgroundMode">背景来源</label>
+							<select
+								id="backgroundMode"
+								name="backgroundMode"
+								class="form-select"
+								data-post-background-mode="true"
+							>
+								<option value="global" ${backgroundMode === "global" ? "selected" : ""}>跟随站点全局背景</option>
+								<option value="cover" ${backgroundMode === "cover" ? "selected" : ""}>使用封面图作为背景</option>
+								<option value="custom" ${backgroundMode === "custom" ? "selected" : ""}>上传自定义背景图</option>
+							</select>
+							<p class="form-help">“封面图作为背景”会直接复用本文章封面；“自定义背景图”可上传独立背景。</p>
+						</div>
+
+						<div class="form-group ${showCustomBackgroundUploader ? "" : "is-hidden"}" data-post-background-custom-wrap="true">
+							<label for="backgroundImageKey">自定义背景图</label>
+							<input
+								type="hidden"
+								id="backgroundImageKey"
+								name="backgroundImageKey"
+								value="${escapeAttribute(backgroundImageKey)}"
+								maxlength="255"
+								data-post-background-key-input="true"
+							/>
+							<div
+								class="cover-uploader"
+								data-post-background-uploader="true"
+								data-upload-url="/api/admin/media/upload-async"
+								data-csrf-token="${escapeAttribute(csrfToken)}"
+							>
+								<input
+									type="file"
+									class="sr-only"
+									accept="${escapeAttribute(getAllowedMediaAcceptValue())}"
+									data-post-background-file-input="true"
+								/>
+								<div class="cover-dropzone" data-post-background-dropzone="true">
+									${
+										backgroundImageUrl
+											? `<img src="${escapeAttribute(backgroundImageUrl)}" alt="文章背景图预览" class="cover-preview-image" data-post-background-preview-image="true" />`
+											: `<div class="cover-empty" data-post-background-empty="true">拖拽图片或点击上传</div>`
+									}
+								</div>
+								<div class="cover-actions">
+									<button type="button" class="btn btn-sm" data-post-background-select="true">上传背景图</button>
+									<button type="button" class="btn btn-sm btn-danger" data-post-background-clear="true">清空背景图</button>
+								</div>
+								<p class="form-help" data-post-background-upload-status></p>
+							</div>
+						</div>
+
+						<div class="form-group ${showPostBackgroundControls ? "" : "is-hidden"}" data-post-background-controls="true">
+							<p class="form-help">当背景来源为“封面图”或“自定义背景图”时，以下参数会覆盖站点全局背景参数。</p>
+							<div class="editor-background-grid">
+								<div class="editor-background-range">
+									<div class="editor-background-range-head">
+										<label for="backgroundTransparency">背景透明度</label>
+										<span data-post-background-display="backgroundTransparency">${escapeHtml(backgroundTransparency)}%</span>
+									</div>
+									<input
+										id="backgroundTransparency"
+										name="backgroundTransparency"
+										type="range"
+										min="0"
+										max="100"
+										value="${escapeAttribute(backgroundTransparency)}"
+										data-post-background-control="backgroundTransparency"
+									/>
+								</div>
+								<div class="editor-background-range">
+									<div class="editor-background-range-head">
+										<label for="backgroundBlur">高斯模糊</label>
+										<span data-post-background-display="backgroundBlur">${escapeHtml(backgroundBlur)} px</span>
+									</div>
+									<input
+										id="backgroundBlur"
+										name="backgroundBlur"
+										type="range"
+										min="0"
+										max="60"
+										value="${escapeAttribute(backgroundBlur)}"
+										data-post-background-control="backgroundBlur"
+									/>
+								</div>
+								<div class="editor-background-range">
+									<div class="editor-background-range-head">
+										<label for="backgroundScale">缩放</label>
+										<span data-post-background-display="backgroundScale">${escapeHtml(backgroundScale)}%</span>
+									</div>
+									<input
+										id="backgroundScale"
+										name="backgroundScale"
+										type="range"
+										min="0"
+										max="80"
+										value="${escapeAttribute(backgroundScale)}"
+										data-post-background-control="backgroundScale"
+									/>
+								</div>
+								<div class="editor-background-range">
+									<div class="editor-background-range-head">
+										<label for="backgroundPositionX">横向焦点</label>
+										<span data-post-background-display="backgroundPositionX">${escapeHtml(backgroundPositionX)}%</span>
+									</div>
+									<input
+										id="backgroundPositionX"
+										name="backgroundPositionX"
+										type="range"
+										min="-50"
+										max="50"
+										value="${escapeAttribute(backgroundPositionX)}"
+										data-post-background-control="backgroundPositionX"
+									/>
+								</div>
+								<div class="editor-background-range">
+									<div class="editor-background-range-head">
+										<label for="backgroundPositionY">纵向焦点</label>
+										<span data-post-background-display="backgroundPositionY">${escapeHtml(backgroundPositionY)}%</span>
+									</div>
+									<input
+										id="backgroundPositionY"
+										name="backgroundPositionY"
+										type="range"
+										min="-50"
+										max="50"
+										value="${escapeAttribute(backgroundPositionY)}"
+										data-post-background-control="backgroundPositionY"
+									/>
+								</div>
+							</div>
+						</div>
+					</details>
 
 					<details>
 						<summary>SEO（可选）</summary>

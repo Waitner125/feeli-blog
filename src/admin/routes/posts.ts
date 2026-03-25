@@ -18,6 +18,7 @@ import {
 } from "@/lib/security";
 import {
 	DEFAULT_AI_SETTINGS,
+	DEFAULT_SITE_APPEARANCE,
 	getResolvedAiSettings,
 	getSiteAppearance,
 } from "@/lib/site-appearance";
@@ -47,6 +48,13 @@ interface ParsedPostInput {
 	publishedAt: string | null;
 	featuredImageKey: string | null;
 	featuredImageAlt: string | null;
+	backgroundMode: "global" | "cover" | "custom";
+	backgroundImageKey: string | null;
+	backgroundOpacity: number;
+	backgroundBlur: number;
+	backgroundScale: number;
+	backgroundPositionX: number;
+	backgroundPositionY: number;
 	isPinned: boolean;
 	pinnedOrder: number;
 	metaTitle: string | null;
@@ -66,6 +74,36 @@ interface TaxonomyRow {
 	name: string;
 	slug: string;
 	postCount: number;
+}
+
+const POST_BACKGROUND_MODES = ["global", "cover", "custom"] as const;
+type PostBackgroundMode = (typeof POST_BACKGROUND_MODES)[number];
+
+function parsePostBackgroundMode(value: unknown): PostBackgroundMode | null {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
+	if (!normalized) {
+		return "global";
+	}
+
+	return POST_BACKGROUND_MODES.includes(normalized as PostBackgroundMode)
+		? (normalized as PostBackgroundMode)
+		: null;
+}
+
+function clampInteger(
+	value: unknown,
+	min: number,
+	max: number,
+	fallback: number,
+): number {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed)) {
+		return fallback;
+	}
+
+	return Math.min(max, Math.max(min, Math.round(parsed)));
 }
 
 function isPostPublic(
@@ -191,6 +229,65 @@ function parsePostInput(
 		return { error: "封面图片键名不合法" } as const;
 	}
 
+	const backgroundModeRaw = String(body.backgroundMode ?? "").trim();
+	const backgroundMode = parsePostBackgroundMode(backgroundModeRaw);
+	if (!backgroundMode) {
+		return { error: "文章背景模式不合法" } as const;
+	}
+
+	const backgroundImageKeyRaw = String(body.backgroundImageKey ?? "").trim();
+	const backgroundImageKey = backgroundImageKeyRaw
+		? sanitizeMediaKey(backgroundImageKeyRaw)
+		: null;
+	if (backgroundImageKeyRaw && !backgroundImageKey) {
+		return { error: "文章背景图片键名不合法" } as const;
+	}
+
+	if (backgroundMode === "cover" && !featuredImageKey) {
+		return { error: "选择“封面图作为背景”时需要先上传封面图" } as const;
+	}
+
+	if (backgroundMode === "custom" && !backgroundImageKey) {
+		return { error: "请选择或上传文章背景图" } as const;
+	}
+
+	const backgroundTransparency = clampInteger(
+		body.backgroundTransparency,
+		0,
+		100,
+		Math.max(0, Math.min(100, 100 - DEFAULT_SITE_APPEARANCE.backgroundOpacity)),
+	);
+	const backgroundBlur = clampInteger(
+		body.backgroundBlur,
+		0,
+		60,
+		DEFAULT_SITE_APPEARANCE.backgroundBlur,
+	);
+	const backgroundScaleOffset = clampInteger(
+		body.backgroundScale,
+		0,
+		80,
+		Math.max(0, Math.min(80, DEFAULT_SITE_APPEARANCE.backgroundScale - 100)),
+	);
+	const backgroundPositionXOffset = clampInteger(
+		body.backgroundPositionX,
+		-50,
+		50,
+		Math.max(
+			-50,
+			Math.min(50, DEFAULT_SITE_APPEARANCE.backgroundPositionX - 50),
+		),
+	);
+	const backgroundPositionYOffset = clampInteger(
+		body.backgroundPositionY,
+		-50,
+		50,
+		Math.max(
+			-50,
+			Math.min(50, DEFAULT_SITE_APPEARANCE.backgroundPositionY - 50),
+		),
+	);
+
 	const isPinnedRaw = String(body.isPinned ?? "")
 		.trim()
 		.toLowerCase();
@@ -234,6 +331,14 @@ function parsePostInput(
 			publishedAt,
 			featuredImageKey,
 			featuredImageAlt: sanitizePlainText(body.featuredImageAlt, 200) || null,
+			backgroundMode,
+			backgroundImageKey:
+				backgroundMode === "custom" ? backgroundImageKey : null,
+			backgroundOpacity: 100 - backgroundTransparency,
+			backgroundBlur,
+			backgroundScale: 100 + backgroundScaleOffset,
+			backgroundPositionX: 50 + backgroundPositionXOffset,
+			backgroundPositionY: 50 + backgroundPositionYOffset,
 			isPinned,
 			pinnedOrder,
 			metaTitle: sanitizePlainText(body.metaTitle, 200) || null,
@@ -587,6 +692,13 @@ posts.post("/", async (c) => {
 			publishedAt,
 			featuredImageKey: postInput.featuredImageKey,
 			featuredImageAlt: postInput.featuredImageAlt,
+			backgroundMode: postInput.backgroundMode,
+			backgroundImageKey: postInput.backgroundImageKey,
+			backgroundOpacity: postInput.backgroundOpacity,
+			backgroundBlur: postInput.backgroundBlur,
+			backgroundScale: postInput.backgroundScale,
+			backgroundPositionX: postInput.backgroundPositionX,
+			backgroundPositionY: postInput.backgroundPositionY,
 			isPinned: postInput.isPinned,
 			pinnedOrder: postInput.pinnedOrder,
 			metaTitle: postInput.metaTitle,
@@ -823,6 +935,13 @@ posts.post("/:id", async (c) => {
 			publishedAt,
 			featuredImageKey: postInput.featuredImageKey,
 			featuredImageAlt: postInput.featuredImageAlt,
+			backgroundMode: postInput.backgroundMode,
+			backgroundImageKey: postInput.backgroundImageKey,
+			backgroundOpacity: postInput.backgroundOpacity,
+			backgroundBlur: postInput.backgroundBlur,
+			backgroundScale: postInput.backgroundScale,
+			backgroundPositionX: postInput.backgroundPositionX,
+			backgroundPositionY: postInput.backgroundPositionY,
 			isPinned: postInput.isPinned,
 			pinnedOrder: postInput.pinnedOrder,
 			metaTitle: postInput.metaTitle,

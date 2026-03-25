@@ -18,9 +18,31 @@ interface Props {
 	description?: string;
 	image?: string;
 	canonicalUrl?: string;
+	backgroundOverride?: {
+		imageKey: string;
+		opacity: number;
+		blur: number;
+		scale: number;
+		positionX: number;
+		positionY: number;
+	};
 }
 
-const { title, description, image, canonicalUrl } = Astro.props;
+function clampInteger(
+	value: number | null | undefined,
+	min: number,
+	max: number,
+	fallback: number,
+): number {
+	if (typeof value !== "number" || Number.isNaN(value)) {
+		return fallback;
+	}
+
+	return Math.min(max, Math.max(min, Math.round(value)));
+}
+
+const { title, description, image, canonicalUrl, backgroundOverride } =
+	Astro.props;
 const isAdminPreview = Astro.url.searchParams.get("adminPreview") === "1";
 let siteAppearance = DEFAULT_SITE_APPEARANCE;
 
@@ -30,11 +52,49 @@ try {
 	// D1 未绑定时使用默认外观
 }
 
-const backgroundImageUrl = buildBackgroundImageUrl(
-	siteAppearance.backgroundImageKey,
-);
+const overrideImageKey = backgroundOverride?.imageKey?.trim() || "";
+const hasBackgroundOverride = Boolean(overrideImageKey);
+const resolvedBackgroundImageKey = hasBackgroundOverride
+	? overrideImageKey
+	: siteAppearance.backgroundImageKey;
+const resolvedBackgroundOpacity = hasBackgroundOverride
+	? clampInteger(
+			backgroundOverride?.opacity,
+			0,
+			100,
+			siteAppearance.backgroundOpacity,
+		)
+	: siteAppearance.backgroundOpacity;
+const resolvedBackgroundBlur = hasBackgroundOverride
+	? clampInteger(backgroundOverride?.blur, 0, 60, siteAppearance.backgroundBlur)
+	: siteAppearance.backgroundBlur;
+const resolvedBackgroundScale = hasBackgroundOverride
+	? clampInteger(
+			backgroundOverride?.scale,
+			100,
+			180,
+			siteAppearance.backgroundScale,
+		)
+	: siteAppearance.backgroundScale;
+const resolvedBackgroundPositionX = hasBackgroundOverride
+	? clampInteger(
+			backgroundOverride?.positionX,
+			0,
+			100,
+			siteAppearance.backgroundPositionX,
+		)
+	: siteAppearance.backgroundPositionX;
+const resolvedBackgroundPositionY = hasBackgroundOverride
+	? clampInteger(
+			backgroundOverride?.positionY,
+			0,
+			100,
+			siteAppearance.backgroundPositionY,
+		)
+	: siteAppearance.backgroundPositionY;
+const backgroundImageUrl = buildBackgroundImageUrl(resolvedBackgroundImageKey);
 const backgroundImageStyle = backgroundImageUrl
-	? `--bg-focus-x: ${siteAppearance.backgroundPositionX}; --bg-focus-y: ${siteAppearance.backgroundPositionY}; --bg-blur: ${siteAppearance.backgroundBlur}px; --bg-scale: ${siteAppearance.backgroundScale / 100}; --bg-opacity: ${siteAppearance.backgroundOpacity / 100};`
+	? `--bg-focus-x: ${resolvedBackgroundPositionX}; --bg-focus-y: ${resolvedBackgroundPositionY}; --bg-blur: ${resolvedBackgroundBlur}px; --bg-scale: ${resolvedBackgroundScale / 100}; --bg-opacity: ${resolvedBackgroundOpacity / 100};`
 	: "";
 const surfaceStyle = `--hero-card-opacity: ${siteAppearance.heroCardOpacity}; --hero-card-blur: ${siteAppearance.heroCardBlur}px; --post-card-opacity: ${siteAppearance.postCardOpacity}; --post-card-blur: ${siteAppearance.postCardBlur}px; --article-panel-opacity: ${siteAppearance.articlePanelOpacity}; --article-panel-blur: ${siteAppearance.articlePanelBlur}px;`;
 const resolvedDescription =

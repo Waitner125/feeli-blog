@@ -47,6 +47,13 @@ export const blogPosts = sqliteTable(
 		publishedAt: text("published_at"),
 		featuredImageKey: text("featured_image_key"),
 		featuredImageAlt: text("featured_image_alt"),
+		backgroundMode: text("background_mode").notNull().default("global"),
+		backgroundImageKey: text("background_image_key"),
+		backgroundOpacity: integer("background_opacity").notNull().default(72),
+		backgroundBlur: integer("background_blur").notNull().default(24),
+		backgroundScale: integer("background_scale").notNull().default(112),
+		backgroundPositionX: integer("background_position_x").notNull().default(50),
+		backgroundPositionY: integer("background_position_y").notNull().default(50),
 		isPinned: integer("is_pinned", { mode: "boolean" })
 			.notNull()
 			.default(false),
