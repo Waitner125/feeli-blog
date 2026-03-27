@@ -206,6 +206,9 @@ describe("源码回归保护", () => {
 		assert.ok(
 			applyPageSource.includes("siteAppearanceSettings.friendApplyNotice"),
 		);
+		assert.ok(
+			applyPageSource.includes('<p class="page-intro">{friendApplyNotice}</p>'),
+		);
 		assert.ok(applyPageSource.includes("white-space: pre-line;"));
 	});
 

@@ -67,7 +67,7 @@ const applyMessage = getApplyMessage(applyStatus);
 		friendApplyNotice ? (
 			<section class="friends-apply-notice glass-panel">
 				<h2>申请须知</h2>
-				<p>{friendApplyNotice}</p>
+				<p class="page-intro">{friendApplyNotice}</p>
 			</section>
 		) : null
 	}
@@ -149,7 +149,6 @@ const applyMessage = getApplyMessage(applyStatus);
 	.friends-apply-notice p {
 		margin: 0;
 		white-space: pre-line;
-		color: var(--color-text-muted);
 	}
 
 	.friends-apply-form {
