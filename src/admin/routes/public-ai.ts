@@ -304,7 +304,9 @@ function buildTerminalTranscriptUserMessage(
 }
 
 function isTerminalClearCommand(command: string): boolean {
-	const normalized = String(command ?? "").trim().toLowerCase();
+	const normalized = String(command ?? "")
+		.trim()
+		.toLowerCase();
 	return normalized === "clear" || normalized === "cls";
 }
 
@@ -354,7 +356,7 @@ function parseTerminalAiResponsePayload(
 	const normalizedNextCwd = normalizeTerminalCwd(
 		sanitizePlainText(payload?.nextCwd, MAX_TERMINAL_CWD_LENGTH),
 	);
-	const nextCwd = isCd ? (normalizedNextCwd || safeCurrentCwd) : safeCurrentCwd;
+	const nextCwd = isCd ? normalizedNextCwd || safeCurrentCwd : safeCurrentCwd;
 
 	return {
 		clear: clearFlag,

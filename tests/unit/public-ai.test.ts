@@ -32,10 +32,7 @@ describe("公开 AI 接口防护", () => {
 			source,
 			/publicAiRoutes\.post\("\/terminal-404"[\s\S]*requireTurnstile:\s*false/u,
 		);
-		assert.match(
-			source,
-			/你必须只返回一个 JSON 对象/u,
-		);
+		assert.match(source, /你必须只返回一个 JSON 对象/u);
 		assert.match(source, /"nextCwd": "\/规范路径"/u);
 		assert.match(source, /clear\/cls：clear=true/u);
 		assert.match(source, /zsh: no such file or directory/u);
