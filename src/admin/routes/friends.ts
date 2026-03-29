@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import { friendLinks, siteAppearanceSettings } from "@/db/schema";
 import { getDb } from "@/lib/db";
@@ -54,6 +54,17 @@ interface FriendLinkCreateInput {
 	reviewNote: string | null;
 }
 
+interface FriendLinkFormFieldMap {
+	nameKey: string;
+	siteUrlKey: string;
+	avatarUrlKey: string;
+	descriptionKey: string;
+	contactKey: string;
+	noteKey: string;
+	statusKey: string;
+	reviewNoteKey: string;
+}
+
 function normalizeFriendLinkStatus(value: unknown): FriendLinkStatus | null {
 	const normalized = String(value ?? "").trim();
 	return FRIEND_LINK_STATUS_VALUES.includes(normalized as FriendLinkStatus)
@@ -90,7 +101,7 @@ function resolveAlert(
 ): { type: "success" | "error"; message: string } | undefined {
 	switch (status) {
 		case "updated":
-			return { type: "success", message: "友链状态已更新" };
+			return { type: "success", message: "友链信息已更新" };
 		case "deleted":
 			return { type: "success", message: "友链记录已删除" };
 		case "created":
@@ -105,6 +116,10 @@ function resolveAlert(
 			return { type: "error", message: "新增友链参数不完整或格式无效" };
 		case "create-duplicate":
 			return { type: "error", message: "该站点地址已存在，无法重复添加" };
+		case "update-invalid":
+			return { type: "error", message: "保存失败，参数不完整或格式无效" };
+		case "update-duplicate":
+			return { type: "error", message: "保存失败，站点地址与其他记录重复" };
 		case "csrf-failed":
 			return { type: "error", message: "CSRF 校验失败，请刷新页面后重试" };
 		default:
@@ -115,28 +130,63 @@ function resolveAlert(
 function parseFriendCreateInput(
 	body: Record<string, unknown>,
 ): { data: FriendLinkCreateInput } | { error: "invalid" } {
-	const name = sanitizePlainText(getBodyText(body, "createName"), 80);
-	const siteUrl = sanitizeCanonicalUrl(getBodyText(body, "createSiteUrl"));
-	const rawAvatarUrl = getBodyText(body, "createAvatarUrl");
+	return parseFriendFormInput(body, {
+		nameKey: "createName",
+		siteUrlKey: "createSiteUrl",
+		avatarUrlKey: "createAvatarUrl",
+		descriptionKey: "createDescription",
+		contactKey: "createContact",
+		noteKey: "createNote",
+		statusKey: "createStatus",
+		reviewNoteKey: "createReviewNote",
+	});
+}
+
+function parseFriendReviewInput(
+	body: Record<string, unknown>,
+): { data: FriendLinkCreateInput } | { error: "invalid" } {
+	return parseFriendFormInput(body, {
+		nameKey: "name",
+		siteUrlKey: "siteUrl",
+		avatarUrlKey: "avatarUrl",
+		descriptionKey: "description",
+		contactKey: "contact",
+		noteKey: "note",
+		statusKey: "status",
+		reviewNoteKey: "reviewNote",
+	});
+}
+
+function parseFriendFormInput(
+	body: Record<string, unknown>,
+	fieldMap: FriendLinkFormFieldMap,
+): { data: FriendLinkCreateInput } | { error: "invalid" } {
+	const name = sanitizePlainText(getBodyText(body, fieldMap.nameKey), 80);
+	const siteUrl = sanitizeCanonicalUrl(getBodyText(body, fieldMap.siteUrlKey));
+	const rawAvatarUrl = getBodyText(body, fieldMap.avatarUrlKey);
 	const avatarUrl = rawAvatarUrl ? sanitizeCanonicalUrl(rawAvatarUrl) : null;
 	const description = sanitizePlainText(
-		getBodyText(body, "createDescription"),
+		getBodyText(body, fieldMap.descriptionKey),
 		320,
 		{ allowNewlines: true },
 	);
-	const contact = sanitizePlainText(getBodyText(body, "createContact"), 120, {
-		allowNewlines: true,
-	});
+	const contact = sanitizePlainText(
+		getBodyText(body, fieldMap.contactKey),
+		120,
+		{
+			allowNewlines: true,
+		},
+	);
 	const note =
-		sanitizePlainText(getBodyText(body, "createNote"), 320, {
+		sanitizePlainText(getBodyText(body, fieldMap.noteKey), 320, {
 			allowNewlines: true,
 		}) || null;
 	const reviewNote =
-		sanitizePlainText(getBodyText(body, "createReviewNote"), 320, {
+		sanitizePlainText(getBodyText(body, fieldMap.reviewNoteKey), 320, {
 			allowNewlines: true,
 		}) || null;
 	const status = normalizeFriendLinkStatus(
-		getBodyText(body, "createStatus") || "approved",
+		getBodyText(body, fieldMap.statusKey) || "approved",
 	);
 
 	if (!name || !siteUrl || !contact || !status) {
@@ -238,6 +288,22 @@ function renderFriendRows(rows: FriendLinkRow[], csrfToken: string) {
 							<input type="hidden" name="_csrf" value="${escapeAttribute(csrfToken)}" />
 							<div class="appearance-inline-grid">
 								<div class="form-group form-group-tight">
+									<label for="name-${item.id}">站点名称</label>
+									<input id="name-${item.id}" name="name" class="form-input" maxlength="80" required value="${escapeAttribute(item.name)}" />
+								</div>
+								<div class="form-group form-group-tight">
+									<label for="siteUrl-${item.id}">站点地址</label>
+									<input id="siteUrl-${item.id}" name="siteUrl" class="form-input" type="url" maxlength="320" required value="${escapeAttribute(item.siteUrl)}" />
+								</div>
+								<div class="form-group form-group-tight">
+									<label for="avatarUrl-${item.id}">头像地址（可选）</label>
+									<input id="avatarUrl-${item.id}" name="avatarUrl" class="form-input" type="url" maxlength="320" value="${escapeAttribute(item.avatarUrl || "")}" />
+								</div>
+								<div class="form-group form-group-tight">
+									<label for="contact-${item.id}">联系方式</label>
+									<input id="contact-${item.id}" name="contact" class="form-input" maxlength="120" required value="${escapeAttribute(item.contact)}" />
+								</div>
+								<div class="form-group form-group-tight">
 									<label for="status-${item.id}">审核状态</label>
 									<select id="status-${item.id}" name="status" class="form-select">
 										${FRIEND_LINK_STATUS_VALUES.map(
@@ -250,9 +316,17 @@ function renderFriendRows(rows: FriendLinkRow[], csrfToken: string) {
 									<label for="reviewNote-${item.id}">审核备注</label>
 									<input id="reviewNote-${item.id}" name="reviewNote" class="form-input" maxlength="320" value="${escapeAttribute(item.reviewNote || "")}" placeholder="可选" />
 								</div>
+								<div class="form-group" style="grid-column: 1 / -1;">
+									<label for="description-${item.id}">站点简介（可选）</label>
+									<textarea id="description-${item.id}" name="description" class="form-textarea" maxlength="320" rows="3">${escapeHtml(item.description)}</textarea>
+								</div>
+								<div class="form-group" style="grid-column: 1 / -1;">
+									<label for="note-${item.id}">站长备注（可选）</label>
+									<textarea id="note-${item.id}" name="note" class="form-textarea" maxlength="320" rows="3">${escapeHtml(item.note || "")}</textarea>
+								</div>
 							</div>
 							<div class="form-actions">
-								<button type="submit" class="btn btn-primary btn-sm">保存审核</button>
+								<button type="submit" class="btn btn-primary btn-sm">保存更改</button>
 							</div>
 						</form>
 						<form method="post" action="/api/admin/friends/${item.id}/delete" data-confirm-message="${escapeAttribute("确认删除这条友链记录吗？")}" class="review-delete-form">
@@ -502,18 +576,35 @@ friendsRoutes.post("/:id/review", async (c) => {
 		return c.redirect("/api/admin/friends?status=invalid-status");
 	}
 
-	const reviewNote =
-		sanitizePlainText(getBodyText(body, "reviewNote"), 320, {
-			allowNewlines: true,
-		}) || null;
+	const parsed = parseFriendReviewInput(body);
+	if ("error" in parsed) {
+		return c.redirect("/api/admin/friends?status=update-invalid");
+	}
+
 	const now = new Date().toISOString();
 	const db = getDb(c.env.DB);
+	const [existing] = await db
+		.select({ id: friendLinks.id })
+		.from(friendLinks)
+		.where(
+			and(eq(friendLinks.siteUrl, parsed.data.siteUrl), ne(friendLinks.id, id)),
+		)
+		.limit(1);
+	if (existing) {
+		return c.redirect("/api/admin/friends?status=update-duplicate");
+	}
 
 	await db
 		.update(friendLinks)
 		.set({
+			name: parsed.data.name,
+			siteUrl: parsed.data.siteUrl,
+			avatarUrl: parsed.data.avatarUrl,
+			description: parsed.data.description,
+			contact: parsed.data.contact,
+			note: parsed.data.note,
 			status: nextStatus,
-			reviewNote,
+			reviewNote: parsed.data.reviewNote,
 			reviewedAt: nextStatus === "pending" ? null : now,
 			updatedAt: now,
 		})

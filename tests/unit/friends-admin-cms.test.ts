@@ -49,4 +49,22 @@ describe("后台友链直录能力", () => {
 		assert.match(source, /status=created/u);
 		assert.match(source, /status=settings-updated/u);
 	});
+
+	test("友链审核表单支持编辑完整字段并处理更新校验", async () => {
+		const source = await readFile("src/admin/routes/friends.ts", "utf8");
+
+		assert.match(source, /name="name"/u);
+		assert.match(source, /name="siteUrl"/u);
+		assert.match(source, /name="avatarUrl"/u);
+		assert.match(source, /name="description"/u);
+		assert.match(source, /name="contact"/u);
+		assert.match(source, /name="note"/u);
+		assert.match(source, /parseFriendReviewInput/u);
+		assert.match(source, /status=update-invalid/u);
+		assert.match(source, /status=update-duplicate/u);
+		assert.match(source, /and\(eq\(friendLinks\.siteUrl/u);
+		assert.match(source, /ne\(friendLinks\.id, id\)/u);
+		assert.match(source, /siteUrl: parsed\.data\.siteUrl/u);
+		assert.match(source, /status: nextStatus/u);
+	});
 });
