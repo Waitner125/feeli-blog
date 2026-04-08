@@ -33,7 +33,7 @@ export const siteConfig: SiteConfig = {
 		category: "Announcements",
 		categoryId: "DIC_kwDOR7-7P84C6WGB",
 		mapping: "pathname",
-		strict: true,
+		strict: false,
 		reactionsEnabled: true,
 		inputPosition: "top",
 		lang: "zh-CN",
