@@ -29,9 +29,9 @@ export const siteConfig: SiteConfig = {
 	comments: {
 		provider: "giscus",
 		repo: "Waitner125/feeli-blog",
-		repoId: "",
+		repoId: "R_kgDOR7-7Pw",
 		category: "Announcements",
-		categoryId: "",
+		categoryId: "DIC_kwDOR7-7P84C6WGB",
 		mapping: "pathname",
 		strict: true,
 		reactionsEnabled: true,
