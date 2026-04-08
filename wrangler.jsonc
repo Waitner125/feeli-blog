@@ -1,7 +1,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": "@astrojs/cloudflare/entrypoints/server",
-	"name": "cf-astro-blog",
+	"name": "feeli-blog",
 	"compatibility_date": "2026-02-10",
 	"compatibility_flags": ["nodejs_compat", "disable_nodejs_process_v2"],
 
