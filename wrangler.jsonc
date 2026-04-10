@@ -33,13 +33,13 @@
 	"kv_namespaces": [
 		{
 			"binding": "SESSION",
-			"id": "fcd6aa02137e49b4bb6a4531a06aae5f"
+			"id": "27b390e84329455983253521622e1205"
 		}
 	],
 
 	"vars": {
 		"SITE_NAME": "My Blog",
-		"SITE_URL": "https://blog.994613.xyx",
+		"SITE_URL": "https://blog.994613.xyz",
 		"TURNSTILE_SITE_KEY": "0x4AAAAAACnxh79QQawnz9UI"
 	}
 
