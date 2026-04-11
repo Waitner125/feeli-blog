@@ -468,7 +468,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 					<svg class="entry-notice-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
 						<path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 4a1 1 0 011 1v4a1 1 0 11-2 0V7a1 1 0 011-1zm0 8a1.25 1.25 0 110-2.5A1.25 1.25 0 0110 14z" fill="currentColor"/>
 					</svg>
-					<span>此后台仅供 <strong>@Eric-Terminal</strong> 登录使用，暂不对外开放。</span>
+					<span>此后台仅供 <strong>@临渊羡鱼</strong> 登录使用，暂不对外开放。</span>
 				</div>
 
 				${error ? `<p class="entry-error" role="alert">${escapeHtml(error)}</p>` : ""}
