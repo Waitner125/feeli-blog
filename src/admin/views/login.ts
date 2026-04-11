@@ -447,7 +447,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 		<header class="entry-header">
 			<a href="/" class="entry-brand" aria-label="返回 首页">
 				<img
-					src="https://t.alcy.cc/tx"
+					src="https://assets.ericterminal.com/logo-transparent.png"
 					alt=""
 					class="entry-brand-logo"
 				/>
