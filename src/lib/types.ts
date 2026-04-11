@@ -21,7 +21,7 @@ export interface CommentConfig {
 }
 
 export const siteConfig: SiteConfig = {
-	name: "临渊羡鱼 的博客",
+	name: "临渊羡鱼的博客",
 	url: "https://blog.994613.xyz",
 	description: "",
 	author: "临渊羡鱼",
