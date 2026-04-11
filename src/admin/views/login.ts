@@ -18,7 +18,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>登录 · EricTerminal's Blog</title>
+	<title>登录 · 临渊羡鱼博客</title>
 	<meta name="robots" content="noindex, nofollow" />
 	<script src="/theme.js"></script>
 	<style>
@@ -445,13 +445,13 @@ export function loginPage(options: LoginPageOptions = {}): string {
 	${hasBackgroundImage ? `<div class="bg-image-layer" aria-hidden="true"><img src="${escapedBackgroundImageUrl}" alt="" loading="eager" decoding="async" /></div>` : ""}
 	<main class="entry-shell">
 		<header class="entry-header">
-			<a href="/" class="entry-brand" aria-label="返回 EricTerminal's Blog 首页">
+			<a href="/" class="entry-brand" aria-label="返回 首页">
 				<img
 					src="https://t.alcy.cc/tx"
 					alt=""
 					class="entry-brand-logo"
 				/>
-				<span>EricTerminal's Blog</span>
+				<span>临渊羡鱼博客</span>
 			</a>
 		</header>
 
@@ -489,7 +489,7 @@ export function loginPage(options: LoginPageOptions = {}): string {
 			</div>
 		</section>
 
-		<p class="entry-footer">EricTerminal's Blog &mdash; 后台入口</p>
+		<p class="entry-footer">临渊羡鱼博客 &mdash; 后台入口</p>
 	</main>
 </body>
 </html>`;
