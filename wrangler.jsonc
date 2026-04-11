@@ -38,10 +38,18 @@
 	],
 
 	"vars": {
-		"SITE_NAME": "My Blog",
-		"SITE_URL": "https://blog.994613.xyz",
-		"TURNSTILE_SITE_KEY": "0x4AAAAAACnxh79QQawnz9UI"
-	}
+    "ADMIN_GITHUB_LOGIN": "Waitner125",
+    "AUTO_DEPLOY_GITHUB_EVENT_TYPE": "rebuild-search-index",
+    "AUTO_DEPLOY_WEBHOOK_SECRET": "",
+    "AUTO_DEPLOY_WEBHOOK_URL": "https://api.github.com/repos/Waitner125/feeli-blog/dispatches",
+    "GITHUB_OAUTH_CLIENT_ID": "Ov23liOyHw75GXANK2MG",
+    "GITHUB_OAUTH_CLIENT_SECRET": "0703ddb130c741f11697f3e63222e8a20a6ee9f4",
+    "JWT_SECRET": "I1NtY21SMC1X4+lfjbfupgc3+tgqMao2SXICGuPq9JI=",
+    "SITE_NAME": "My Blog",
+    "SITE_URL": "https://blog.994613.xyz",
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAC7LyiGnXCv8JHBC",
+    "TURNSTILE_SECRET_KEY": "0x4AAAAAAC7LysEjguG9MeRVIBqYnIOW-YI"
+}
 
 	// 机密变量可通过 `wrangler secret put` 或本地 `.dev.vars` 配置
 	// JWT_SECRET 
