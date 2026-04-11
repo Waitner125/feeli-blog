@@ -3,6 +3,7 @@ import CommentsPanel from "@/components/CommentsPanel.astro";
 import { formatDate } from "@/lib/format";
 import type { MarkdownTocItem } from "@/lib/security";
 import Base from "./Base.astro";
+import Hitokoto from "@/components/Hitokoto.astro";
 
 interface Props {
 	slug: string;
@@ -122,7 +123,9 @@ const hasToc = tocEntries.length > 0;
 				</div>
 				<span class="article-profile-badge">{sidebarBadge}</span>
 				<strong class="article-profile-name">{sidebarName}</strong>
-				<p class="article-profile-bio">{sidebarBio}</p>
+				<div class="article-profile-bio">
+					<Hitokoto client:load fallback={sidebarBio} />
+				</div>
 				<div class="article-profile-meta">
 					{formattedDate && (
 						<div class="article-profile-item">
