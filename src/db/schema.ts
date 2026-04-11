@@ -202,7 +202,7 @@ export const siteAppearanceSettings = sqliteTable("site_appearance_settings", {
 	articleSidebarAvatarPath: text("article_sidebar_avatar_path"),
 	articleSidebarName: text("article_sidebar_name")
 		.notNull()
-		.default("Eric-Terminal"),
+		.default("临渊羡鱼"),
 	articleSidebarBio: text("article_sidebar_bio")
 		.notNull()
 		.default("在比特海里未雨绸缪，身后养着一只叫晖的狐狸。"),
