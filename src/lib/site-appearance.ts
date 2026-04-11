@@ -146,7 +146,7 @@ export const DEFAULT_SITE_APPEARANCE: SiteAppearance = {
 	heroSignalChip2: "Soft Orbit",
 	heroSignalChip3: "Card Lift",
 	articleSidebarAvatarPath: null,
-	articleSidebarName: "Eric-Terminal",
+	articleSidebarName: "临渊羡鱼",
 	articleSidebarBio: "在比特海里未雨绸缪，身后养着一只叫晖的狐狸。",
 	articleSidebarBadge: "文章作者",
 	mcpEnabled: true,
