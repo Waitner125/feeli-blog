@@ -105,7 +105,7 @@ function applySecurityHeaders(
 		const scriptSources = [
 			"'self'",
 			"'unsafe-inline'",
-			"ttps://registry.npmmirror.com",
+			"https://registry.npmmirror.com",
 			"https://challenges.cloudflare.com",
 			"https://static.cloudflareinsights.com",
 			"'wasm-unsafe-eval'",
