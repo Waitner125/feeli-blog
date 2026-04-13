@@ -119,10 +119,11 @@ function applySecurityHeaders(
 				"object-src 'none'",
 				"form-action 'self'",
 				`script-src ${scriptSources.join(" ")}`,
+				`script-src-elem ${scriptSources.join(" ")}`, 
 				"style-src 'self' 'unsafe-inline'",
 				"img-src 'self' data: https:",
 				"font-src 'self' data: https:",
-				"connect-src 'self' https://test.994613.xyz/ https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com",
+				"connect-src 'self' https://owo.imaegoo.com https://test.994613.xyz https://challenges.cloudflare.com https://static.cloudflareinsights.com https://cloudflareinsights.com",
 				"frame-src 'self' https://challenges.cloudflare.com",
 			].join("; "),
 		);
