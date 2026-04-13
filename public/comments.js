@@ -10,7 +10,7 @@
 		if (window.twikoo) return Promise.resolve(window.twikoo);
 		return new Promise((resolve, reject) => {
 			const script = document.createElement("script");
-			script.src = "https://registry.npmmirror.com/twikoo/1.7.7/files/dist/twikoo.min.js";
+			script.src = "https://registry.npmmirror.com/twikoo/1.6.44/files/dist/twikoo.min.js";
 			script.crossOrigin = "anonymous";
 			script.onload = () => resolve(window.twikoo);
 			script.onerror = () => reject(new Error("Twikoo 加载失败"));
