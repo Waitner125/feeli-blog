@@ -1,70 +1,63 @@
 ---
 import { siteConfig } from "@/lib/types";
 
-const commentsConfig = siteConfig.comments;
-const isCommentConfigReady = Boolean(
-	commentsConfig.repo &&
-		commentsConfig.repoId &&
-		commentsConfig.category &&
-		commentsConfig.categoryId,
-);
+const comments = siteConfig.comments;
+const isCommentConfigReady = comments.provider === "twikoo" && Boolean(comments.envId);
 ---
 
-<section
-	class="comments-panel"
-	data-comments-panel
-	data-comments-ready={isCommentConfigReady ? "true" : "false"}
-	data-comments-provider={commentsConfig.provider}
-	data-comments-repo={commentsConfig.repo}
-	data-comments-repo-id={commentsConfig.repoId}
-	data-comments-category={commentsConfig.category}
-	data-comments-category-id={commentsConfig.categoryId}
-	data-comments-mapping={commentsConfig.mapping}
-	data-comments-strict={commentsConfig.strict ? "1" : "0"}
-	data-comments-reactions-enabled={commentsConfig.reactionsEnabled ? "1" : "0"}
-	data-comments-input-position={commentsConfig.inputPosition}
-	data-comments-lang={commentsConfig.lang}
->
-	<button
-		class="comments-toggle"
-		type="button"
-		aria-expanded="false"
-		aria-controls="comments-panel-body"
-		data-comments-toggle
-	>
-		<span class="comments-toggle-copy">
-			<strong>评论区</strong>
-			<small>默认折叠，点开后再加载 GitHub Discussions </small>
-		</span>
-		<span class="comments-toggle-icon" aria-hidden="true">+</span>
-	</button>
-
+<section class="comments-section">
 	<div
-		id="comments-panel-body"
-		class="comments-body"
-		hidden
-		data-comments-body
+		class="comments-panel"
+		data-comments-panel
+		data-comments-ready={isCommentConfigReady ? "true" : "false"}
+		data-comments-env-id={comments.envId}
+		data-comments-region={comments.region}
+		data-comments-lang={comments.lang}
 	>
-		{isCommentConfigReady ? (
-			<div class="comments-surface">
-				<div class="comments-note">
-					<p>评论会通过 GitHub Discussions 加载</p>
+		<button
+			class="comments-toggle"
+			type="button"
+			aria-expanded="false"
+			aria-controls="comments-panel-body"
+			data-comments-toggle
+		>
+			<span class="comments-toggle-copy">
+				<strong>评论区</strong>
+				<small>默认折叠，点开后再加载评论</small>
+			</span>
+			<span class="comments-toggle-icon" aria-hidden="true">+</span>
+		</button>
+
+		<div
+			id="comments-panel-body"
+			class="comments-body"
+			hidden
+			data-comments-body
+		>
+			{isCommentConfigReady ? (
+				<div class="comments-surface">
+					<div class="comments-note">
+						<p>欢迎留言交流</p>
+					</div>
+					<div id="twikoo-comments"></div>
 				</div>
-				<div class="comments-host" data-giscus-host></div>
-			</div>
-		) : (
-			<div class="comments-empty-state">
-				<p>评论组件已经接好了</p>
-				<p>还差在 GitHub 仓库里开启 Discussions，并回填分类 ID 后才能真正发评论</p>
-				<p>当前仓库：{commentsConfig.repo}</p>
-			</div>
-		)}
+			) : (
+				<div class="comments-empty-state">
+					<p>评论功能未配置</p>
+					<p>请在 src/lib/types.ts 中配置 Twikoo envId</p>
+				</div>
+			)}
+		</div>
 	</div>
 </section>
 
 <script is:inline src="/comments.js"></script>
 
 <style>
+	.comments-section {
+		margin-top: 3rem;
+	}
+
 	.comments-panel {
 		display: grid;
 		gap: 0;
@@ -160,13 +153,8 @@ const isCommentConfigReady = Boolean(
 		line-height: 1.75;
 	}
 
-	.comments-host {
+	#twikoo-comments {
 		min-height: 8rem;
-	}
-
-	.comments-panel.is-open .comments-toggle:hover .comments-toggle-icon {
-		background: var(--color-accent-soft);
-		border-color: rgba(10, 132, 255, 0.16);
 	}
 
 	:global(html.article-opaque-mode) .comments-panel {
