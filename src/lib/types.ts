@@ -8,16 +8,10 @@ export interface SiteConfig {
 }
 
 export interface CommentConfig {
-	provider: "giscus";
-	repo: string;
-	repoId: string;
-	category: string;
-	categoryId: string;
-	mapping: "pathname" | "url" | "title" | "og:title";
-	strict: boolean;
-	reactionsEnabled: boolean;
-	inputPosition: "top" | "bottom";
-	lang: string;
+  provider: "twikoo";
+  envId: string;
+  region?: string;
+  lang?: string;
 }
 
 export const siteConfig: SiteConfig = {
@@ -27,15 +21,9 @@ export const siteConfig: SiteConfig = {
 	author: "临渊羡鱼",
 	language: "zh-CN",
 	comments: {
-		provider: "giscus",
-		repo: "Waitner125/feeli-blog",
-		repoId: "R_kgDOR7-7Pw",
-		category: "Announcements",
-		categoryId: "DIC_kwDOR7-7P84C6WGB",
-		mapping: "pathname",
-		strict: false,
-		reactionsEnabled: true,
-		inputPosition: "top",
+		provider: "twikoo",
+		envId: "https://test.994613.xyz/",
+		region: "ap-shanghai",
 		lang: "zh-CN",
 	},
 };
